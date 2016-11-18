@@ -61,6 +61,14 @@ myCoordinates sub(myCoordinates a, myCoordinates b) {
     	return ret;
 }
 
+myCoordinates crossProduct(myCoordinates u, myCoordinates v) {
+	myCoordinates ret;
+	ret.x = u.y*v.z - u.z*v.y;
+	ret.y = u.z*v.x - u.x*v.z;
+	ret.z = u.x*v.y - u.y*v.x;
+	return ret;
+}
+
 class Polyhedron {
 public:
 	vector<myCoordinates> vertices;
@@ -306,8 +314,18 @@ public:
 	}
 	void drawFace(int i, GLfloat r, GLfloat g, GLfloat b) {
 		glColor3f(r,g,b);
+		GLfloat color[] = {0.0, 0.0, 1.0, 1.0};
+		GLfloat white[]  ={1.0, 1.0, 1.0, 1.0};
+		
+		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, white);
+		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
+		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 100);
+		myCoordinates u=sub(vertices[faces[i][1]],vertices[faces[i][0]]);
+		myCoordinates v=sub(vertices[faces[i][2]],vertices[faces[i][1]]);
+		myCoordinates n=crossProduct(u,v);
 		glBegin(GL_POLYGON);
 			for (int j=0; j<faces[i].size(); j++) {
+				glNormal3f(n.x, n.y, n.z);
 				glVertex3f(vertices[faces[i][j]].x, vertices[faces[i][j]].y, vertices[faces[i][j]].z);
 			}
 		glEnd();

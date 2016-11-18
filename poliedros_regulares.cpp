@@ -192,6 +192,27 @@ void myKeyboard(unsigned char key, int x, int y ) {
 	
 	glutPostRedisplay();
 }
+
+void initializations() {
+	glClearColor(0.0, 0.0, 0.0, 1.0); // intentionally background
+	glEnable(GL_NORMALIZE); // normalize normal vectors
+	glShadeModel(GL_SMOOTH); // do smooth shading
+	glEnable(GL_LIGHTING); // enable lighting
+	// ambient light (red)
+	GLfloat ambientIntensity[4] = {0.5, 0.5, 0.5, 1.0};
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientIntensity);
+	// set up light 0 properties
+	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0}; // white
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lt0Intensity);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lt0Intensity);
+	GLfloat lt0Position[4] = {2.0, 4.0, 5.0, 1.0}; // location
+	glLightfv(GL_LIGHT0, GL_POSITION, lt0Position);
+	// attenuation params (a,b,c)
+	glLightf (GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.0);
+	glLightf (GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
+	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
+	glEnable(GL_LIGHT0);
+}
  
 int main(int argc, char* argv[]){
  
@@ -206,6 +227,7 @@ int main(int argc, char* argv[]){
   glutReshapeFunc(myReshape);
   glutTimerFunc(50, myTimer, 0);
   glutKeyboardFunc(myKeyboard);
+  initializations();
   glutMainLoop();
   return 0;
  
