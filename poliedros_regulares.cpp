@@ -38,19 +38,12 @@ GLfloat colors[][3]={{1.0, 0.0, 0.0},    // vermelho
 					{0.55, 0.14, 0.14}}; // escarlata    
 int type=TETRAHEDRON;
 int NumFaces=4;
-int signal=1;
-
 
 void display(){
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
 	if (open) {
 	 polyhedron.bfs(sourceFace);
-	}
-	if (type==TETRAHEDRON) {
-	signal=-1;
-	} else {
-	signal=1;
 	}
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   	glLoadIdentity();
@@ -62,7 +55,7 @@ void display(){
 	if (open) {
 		vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
 		for (int i=0; i<NumFaces; i++) {
-			if (i==sourceFace) {
+			if (i==0) {
 				polyhedron.drawFace(i,colors[i][0], colors[i][1], colors[i][2]);
 				continue;
 			}
@@ -71,7 +64,7 @@ void display(){
 					myCoordinates vect=transformations[i][j].first;
 					glTranslatef(vect.x, vect.y, vect.z);
 					myCoordinates vecr=transformations[i][j].second;
-					glRotated(angle, signal*vecr.x, signal*vecr.y, signal*vecr.z);
+					glRotated(angle, vecr.x, vecr.y, vecr.z);
 					glTranslatef(-vect.x, -vect.y, -vect.z);
 				}
 				polyhedron.drawFace(i,colors[i][0], colors[i][1], colors[i][2]);
@@ -153,9 +146,8 @@ void myMouse(int b, int s, int x, int y) {
 				open=false;
 				angle=0.0f;
 				glutPostRedisplay();
-			} else if (i!=-1){
+			} else {
 				open=true;
-				sourceFace=i;
 				glutPostRedisplay();
 			}
 		}

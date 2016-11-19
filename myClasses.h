@@ -144,9 +144,9 @@ public:
 			case TETRAHEDRON:
 				{
 					angle = 180-acos(1.0/3)*180.0/M_PI;
-					vertices.push_back(myCoordinates(-0.5, 0.5, -0.5));
+					vertices.push_back(myCoordinates(0.5, 0.5, 0.5));
 					vertices.push_back(myCoordinates( -0.5,  -0.5, 0.5));
-					vertices.push_back(myCoordinates(0.5,  0.5, 0.5));
+					vertices.push_back(myCoordinates(-0.5,  0.5, -0.5));
 					vertices.push_back(myCoordinates(0.5,  -0.5, -0.5));
 					
 					int f[][3]={{2,  1,  0},
@@ -174,7 +174,7 @@ public:
 					vertices[7].set(-0.5, -0.5, -0.5);
 					
 					int f[][4]={{0,1,2,3},
-					   {4,5,6,7},
+					   {7,6,5,4},
 					   {4,5,1,0},
 					   {3,2,6,7},
 					   {1,5,6,2},
