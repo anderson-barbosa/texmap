@@ -69,6 +69,83 @@ myCoordinates crossProduct(myCoordinates u, myCoordinates v) {
 	return ret;
 }
 
+myCoordinates normalize(myCoordinates v) {
+	myCoordinates ret;
+	GLfloat mod=sqrt(pow(v.x,2) + pow(v.y,2) + pow(v.z,2));
+	ret.x=v.x/mod;
+	ret.y=v.y/mod;
+	ret.z=v.z/mod;
+	return ret;
+}
+
+GLfloat determinant(vector<vector<GLfloat> > m) {
+	if (m.size()==1) {
+		return m[0][0];
+	}
+	GLfloat sum=0;
+	for (int i=0; i<m.size(); i++) {
+		vector<vector<GLfloat> > m2=m;
+		m2.erase(m2.begin()+i);
+		for (int j=0; j<m2.size(); j++) {
+			m2[j].erase(m2[j].begin());
+		}
+		sum+=m[i][0]*pow(-1,i+2)*determinant(m2);
+	}
+	return sum;
+}
+
+vector<vector<GLfloat> > transpose(vector<vector<GLfloat> > m) {
+	vector<vector<GLfloat> > ret(m[0].size());
+	for (int i=0; i<ret.size(); i++) {
+		ret[i].resize(m.size());
+		for (int j=0; j<m.size(); j++) {
+			ret[i][j]=m[j][i];
+		}
+	}
+	return ret;
+}
+
+vector<vector<GLfloat> > inverse(vector<vector<GLfloat> > m) {
+	vector<vector<GLfloat> > c(m.size());
+	for (int i=0; i<c.size(); i++) {
+		c[i].resize(m.size());
+		for (int j=0; j<c.size(); j++) {
+			vector<vector<GLfloat> > m2=m;
+			m2.erase(m2.begin()+i);
+			for (int k=0; k<m2.size(); k++) {
+				m2[k].erase(m2[k].begin()+j);
+			}
+			cout << m2.size() << " " << m2[0].size() << endl;
+			c[i][j]=determinant(m2)*pow(-1,i+j+2);
+		}
+		
+	}
+	vector<vector<GLfloat> > ret;
+	ret=transpose(c);
+	GLfloat det=determinant(m)
+	;for (int i=0; i<ret.size(); i++) {
+		for (int j=0; j<ret.size(); j++) {
+			ret[i][j]/=det;
+		}
+	}
+	return ret;
+}
+
+vector<vector<GLfloat> > multMatrix(vector<vector<GLfloat> > a, vector<vector<GLfloat> > b) {
+	vector<vector<GLfloat> > ret(a.size());
+	for (int i=0; i<a.size(); i++) {
+		ret[i].resize(b[0].size());
+		for(int j=0; j<b[0].size(); j++) {
+			GLfloat sum=0;
+			for (int k=0; k<b.size(); k++) {
+				sum+=a[i][k]*b[k][j];
+			}
+			ret[i][j]=sum;
+		}
+	}
+	return ret;
+}
+
 class Polyhedron {
 public:
 	vector<myCoordinates> vertices;
@@ -322,7 +399,7 @@ public:
 		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 100);
 		myCoordinates u=sub(vertices[faces[i][1]],vertices[faces[i][0]]);
 		myCoordinates v=sub(vertices[faces[i][2]],vertices[faces[i][1]]);
-		myCoordinates n=crossProduct(u,v);
+		myCoordinates n=normalize(crossProduct(u,v));
 		glBegin(GL_POLYGON);
 			for (int j=0; j<faces[i].size(); j++) {
 				glNormal3f(n.x, n.y, n.z);
