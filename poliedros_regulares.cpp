@@ -3,11 +3,7 @@
 #include <stdarg.h>
 #include <math.h>
 #define GL_GLEXT_PROTOTYPES
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <GL/GLAux.h>
  
 double rotate_y=0; 
 double rotate_x=0;
@@ -38,6 +34,24 @@ GLfloat colors[][3]={{1.0, 0.0, 0.0},    // vermelho
 					{0.55, 0.14, 0.14}}; // escarlata    
 int type=TETRAHEDRON;
 int NumFaces=4;
+
+GLuint textureID;
+AUX_RGBImageRec *myPixelArray; 
+
+AUX_RGBImageRec *LoadBMP(char *Filename){
+	FILE *File=NULL;
+	if (!Filename) {
+		return NULL;         
+	}
+	File=fopen(Filename,"r");	
+	if (File)	// Se o arquivo existe
+	{
+		fclose(File);			        
+		return auxDIBImageLoad(Filename);//Retorna a imagem
+	}
+	return NULL;			
+}
+
 
 void display(){
 	Polyhedron polyhedron(type);
@@ -191,7 +205,7 @@ void initializations() {
 	glShadeModel(GL_SMOOTH); // do smooth shading
 	glEnable(GL_LIGHTING); // enable lighting
 	// ambient light (red)
-	GLfloat ambientIntensity[4] = {0.5, 0.5, 0.5, 1.0};
+	GLfloat ambientIntensity[4] = {0.8, 0.8, 0.8, 1.0};
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientIntensity);
 	// set up light 0 properties
 	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0}; // white
@@ -204,6 +218,31 @@ void initializations() {
 	glLightf (GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
 	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
 	glEnable(GL_LIGHT0);
+	
+	
+	myPixelArray = LoadBMP((char *)"image.bmp");
+	GLuint textureID; // the ID of this texture
+	glGenTextures(1, &textureID); // assign texture ID
+	glBindTexture(GL_TEXTURE_2D, textureID); // make this the active texture
+	//
+	// ... input image nRows x nCols into RGB array myPixelArray
+	//
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, myPixelArray->sizeX, myPixelArray->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, myPixelArray->data);
+	// generate mipmaps (see below)
+//	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, nCols, nRows, GL_RGB,	GL_UNSIGNED_BYTE, myPixelArray);
+	
+	glEnable(GL_TEXTURE_2D); // enable texturing
+	glBindTexture(GL_TEXTURE_2D, textureID); // select the active texture
+	// (use GL_REPLACE below for skyboxes)
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	// repeat texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// reasonable filter choices
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	
+	
 }
  
 int main(int argc, char* argv[]){
