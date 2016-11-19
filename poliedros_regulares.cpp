@@ -56,7 +56,7 @@ void display(){
 		vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
 		for (int i=0; i<NumFaces; i++) {
 			if (i==0) {
-				polyhedron.drawFace(i,colors[i][0], colors[i][1], colors[i][2]);
+				polyhedron.drawFace(i, open);
 				continue;
 			}
 			glPushMatrix();
@@ -67,7 +67,7 @@ void display(){
 					glRotated(angle, vecr.x, vecr.y, vecr.z);
 					glTranslatef(-vect.x, -vect.y, -vect.z);
 				}
-				polyhedron.drawFace(i,colors[i][0], colors[i][1], colors[i][2]);
+				polyhedron.drawFace(i, open);
 			glPopMatrix();
 		}
 
@@ -80,7 +80,7 @@ void display(){
 	
 	} else {
 		for (int i=0; i<NumFaces; i++) {
-			polyhedron.drawFace(i,colors[i][0], colors[i][1], colors[i][2]);
+			polyhedron.drawFace(i, open);
 		}
  
 	}

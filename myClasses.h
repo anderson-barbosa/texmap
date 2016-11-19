@@ -152,6 +152,7 @@ public:
 	vector<vector<int> > faces;
 	vector<vector<int> > edges;
 	vector<vector<int> > spanningTree;
+	vector<vector<pair<GLdouble, GLdouble> > > texCoord;
 	GLfloat angle;
 	
 	int isInVector(int v1, int v2, vector<vector<int> > v) {
@@ -220,6 +221,10 @@ public:
 		{
 			case TETRAHEDRON:
 				{
+					texCoord.resize(4);
+					for (int i=0; i<4; i++) {
+						texCoord[i].resize(3);
+					}
 					angle = 180-acos(1.0/3)*180.0/M_PI;
 					vertices.push_back(myCoordinates(0.5, 0.5, 0.5));
 					vertices.push_back(myCoordinates( -0.5,  -0.5, 0.5));
@@ -239,6 +244,10 @@ public:
 				break;
 			case HEXAHEDRON:
 				{
+					texCoord.resize(6);
+					for (int i=0; i<6; i++) {
+						texCoord[i].resize(4);
+					}
 					angle = 90;
 					vertices.resize(8);
 					vertices[0].set(0.5, -0.5, 0.5);
@@ -265,6 +274,10 @@ public:
 				}
 			case OCTAHEDRON:
 				{
+					texCoord.resize(8);
+					for (int i=0; i<8; i++) {
+						texCoord[i].resize(3);
+					}
 					angle = 180-acos(-1.0/3)*180/M_PI;
 					vertices.push_back(myCoordinates(1.0, 0.0, 0.0));
 					vertices.push_back(myCoordinates( -1.0,  0.0, 0.0));
@@ -291,6 +304,10 @@ public:
 				}
 			case DODECAHEDRON:
 				{
+					texCoord.resize(12);
+					for (int i=0; i<12; i++) {
+						texCoord[i].resize(5);
+					}
 					angle = 180-acos(-1.0/sqrt(5))*180/M_PI;
 					GLfloat t=(1.0 + sqrt(5.0)) / 2.0; 
 					GLfloat r=1.0/t;
@@ -339,6 +356,10 @@ public:
 				}
 			case ICOSAHEDRON:
 				{
+					texCoord.resize(20);
+					for (int i=0; i<20; i++) {
+						texCoord[i].resize(3);
+					}
 					GLfloat t=(1.0 + sqrt(5.0)) / 2.0; 
 					GLfloat r=1.0/t;
 					angle = 180-acos(-sqrt(5)/3.0)*180/M_PI;
@@ -389,8 +410,7 @@ public:
 		}
 	
 	}
-	void drawFace(int i, GLfloat r, GLfloat g, GLfloat b) {
-		glColor3f(r,g,b);
+	void drawFace(int i, bool open) {
 		GLfloat color[] = {0.0, 0.0, 1.0, 1.0};
 		GLfloat white[]  ={1.0, 1.0, 1.0, 1.0};
 		
@@ -400,9 +420,42 @@ public:
 		myCoordinates u=sub(vertices[faces[i][1]],vertices[faces[i][0]]);
 		myCoordinates v=sub(vertices[faces[i][2]],vertices[faces[i][1]]);
 		myCoordinates n=normalize(crossProduct(u,v));
+//		GLfloat mv[16];
+//		glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+//		vector<vector<GLfloat> > modelview(4);
+//		for (int j=0; j<4; j++) {
+//			modelview[j].resize(4);
+//			modelview[j][0]=mv[0+j*4];
+//			modelview[j][1]=mv[1+j*4];
+//			modelview[j][2]=mv[2+j*4];
+//			modelview[j][3]=mv[3+j*4];
+//		}
+//		vector<vector<GLfloat> > newn=normalize(multMatrix(modelview,n));
+//		vector<vector<GLfloat> > v1=multMatriz(modelview, u);
+//		vector<vector<GLfloat> > nv=multMatrix(newn,v1);
+//		vector<vector<GLfloat> > p=multM
+		
 		glBegin(GL_POLYGON);
 			for (int j=0; j<faces[i].size(); j++) {
+//				vector<vector<GLfloat> > m(4);
+//				for (int k=0; k<4; k++) {
+//					m[k].resize(4)
+//					switch (k) {
+//						case 0:
+//							{
+//								m[k][0]=u.x;
+//								m[k][1]=v1.x;
+//								m[k][2]=n.x;
+//								m[k][3]=vertices[face]
+//							}
+//					}
+//				}
+//				vector<vector<GLfloat> > tc=multMatrix(m,tv);
+//				texCoord[i][j]=make_pair(tc[0], tc[1]);
+//				GLdouble s = texCoord[i][j].first
+//				GLdouble t = texCoord[i][j].second
 				glNormal3f(n.x, n.y, n.z);
+				glTexCoord2d(vertices[faces[i][j]].x+0.5,vertices[faces[i][j]].y+0.5);
 				glVertex3f(vertices[faces[i][j]].x, vertices[faces[i][j]].y, vertices[faces[i][j]].z);
 			}
 		glEnd();
