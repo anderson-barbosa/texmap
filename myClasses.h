@@ -191,7 +191,7 @@ public:
 	vector<vector<int> > faces;
 	vector<vector<int> > edges;
 	vector<vector<int> > spanningTree;
-	vector<vector<pair<GLdouble, GLdouble> > > texCoord;
+//	vector<vector<pair<GLdouble, GLdouble> > > texCoord;
 //	vector<vector<GLfloat> > texCoordTf;
 	GLfloat angle;
 	
@@ -427,16 +427,16 @@ public:
 			default:
 				break;
 		}		
-		texCoord.resize(faces.size());
-		for (int i=0; i<texCoord.size(); i++) {
-			texCoord[i].resize(faces[i].size());
-			for (int j=0; j<texCoord[i].size(); j++) {
-				texCoord[i][j]=make_pair(vertices[faces[i][j]].x+0.5,vertices[faces[i][j]].y+0.5);
-			}
-		}
+//		texCoord.resize(faces.size());
+//		for (int i=0; i<texCoord.size(); i++) {
+//			texCoord[i].resize(faces[i].size());
+//			for (int j=0; j<texCoord[i].size(); j++) {
+//				texCoord[i][j]=make_pair(vertices[faces[i][j]].x+0.5,vertices[faces[i][j]].y+0.5);
+//			}
+//		}
 	
 	}
-	void drawFace(int i, bool update, vector<vector<GLfloat> > tcMatrix) {
+	void drawFace(int i, vector<pair<GLfloat, GLfloat> > tc) {
 		GLfloat color[] = {0.0, 0.0, 1.0, 1.0};
 		GLfloat white[]  ={1.0, 1.0, 1.0, 1.0};
 		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, white);
@@ -445,25 +445,10 @@ public:
 		myCoordinates u=sub(vertices[faces[i][1]],vertices[faces[i][0]]);
 		myCoordinates v=sub(vertices[faces[i][2]],vertices[faces[i][1]]);
 		myCoordinates n=normalize(crossProduct(u,v));
-		vector<vector<GLfloat> > modelview(4);
-		GLfloat mv[16];
-		glGetFloatv(GL_MODELVIEW_MATRIX, mv);
-		for (int j=0; j<4; j++) {
-			modelview[j].resize(4);
-			modelview[j][0]=mv[0+j*4];
-			modelview[j][1]=mv[1+j*4];
-			modelview[j][2]=mv[2+j*4];
-			modelview[j][3]=mv[3+j*4];
-		}
-		modelview=transpose(modelview);
 		glBegin(GL_POLYGON);
 			for (int j=0; j<faces[i].size(); j++) {
-				vector<vector<GLfloat> > tc=multMatrix(tcMatrix, multMatrix(modelview,coToVe(vertices[faces[i][j]],1)));
-				texCoord[i][j].first=tc[0][0];
-				texCoord[i][j].second=tc[1][0];
-	//				cout << "OK" << endl;
-				GLdouble s = texCoord[i][j].first;
-				GLdouble t = texCoord[i][j].second;
+				GLdouble s = tc[j].first;
+				GLdouble t = tc[j].second;
 				glNormal3f(n.x, n.y, n.z);
 				glTexCoord2d(s,t);//vertices[faces[i][j]].x+0.5,vertices[faces[i][j]].y+0.5);
 				glVertex3f(vertices[faces[i][j]].x, vertices[faces[i][j]].y, vertices[faces[i][j]].z);

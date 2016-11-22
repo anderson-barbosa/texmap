@@ -11,31 +11,13 @@ int sourceFace=0;
 int height;
 bool open=false;
 GLfloat angle=0;
-GLfloat pAngle;
-GLfloat colors[][3]={{1.0, 0.0, 0.0},    // vermelho
-					{0.0, 1.0, 0.0},     // verde
-					{0.0, 0.0, 1.0},     // azul
-					{1.0, 1.0, 1.0},     // branco
-					{1.0, 0.0, 1.0},     // magenta
-					{0.0, 1.0, 1.0},	 // ciano
-					{1.0, 0.5, 1.0},     // coral
-					{0.65, 0.16, 0.16},  // marrom
-					{0.6, 0.41, 0.2},    // amarelo esverdiado
-					{0.0, 0.5, 1.0},     // azul ardósia
-					{0.5, 0.0, 1.0},     // roxo
-					{0.32, 0.5, 0.46},   // verde cobre
-					{0.75, 0.75, 0.75},  // cinza
-					{1.0, 1.0, 0.0},     // amarelo
-					{1.0, 0.75, 0.40},   // rosa 
-					{0.72, 0.45, 0.2},   // cobre escuro 
-					{0.81, 0.5, 0.2},    // ouro
-					{0.5, 1.0, 0.0},     // verde claro
-					{0, 1.0, 0.5},       // verde claro
-					{0.55, 0.14, 0.14}}; // escarlata    
+GLfloat pAngle; 
 int type=TETRAHEDRON;
 int NumFaces=4;
 vector<vector<GLfloat> > texCoordMatrix;
+vector<vector<pair<GLfloat, GLfloat> > > texCoord;
 bool update=false;
+bool change=true;
 
 
 GLuint textureID;
@@ -88,13 +70,75 @@ vector<vector<GLfloat> > updateTexCoord(int i, Polyhedron ph) {
 	return m;
 }
 
+void updateFaceTexCoord(int i, Polyhedron p) {
+	vector<myCoordinates> vertices=p.vertices;
+	vector<int> face=p.faces[i];
+	vector<vector<GLfloat> > modelview(4);
+	GLfloat mv[16];
+	glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+	for (int j=0; j<4; j++) {
+		modelview[j].resize(4);
+		modelview[j][0]=mv[0+j*4];
+		modelview[j][1]=mv[1+j*4];
+		modelview[j][2]=mv[2+j*4];
+		modelview[j][3]=mv[3+j*4];
+	}
+	modelview=transpose(modelview);
+	for (int j=0; j<face.size(); j++) {
+		vector<vector<GLfloat> > tc = multMatrix(texCoordMatrix, multMatrix(modelview, coToVe(vertices[face[j]],1)));
+		texCoord[i][j].first=tc[0][0];
+		texCoord[i][j].second=tc[1][0];
+	}
+}
+
+void initializeTexCoord(Polyhedron p) {
+	texCoord.resize(NumFaces);
+	switch (NumFaces) {
+		case 4:
+		case 8:
+		case 20:
+			{
+				for (int i=0; i<texCoord.size(); i++) {
+					texCoord[i].resize(3);
+				}
+				break;
+			}
+		case 6:
+			{
+				for (int i=0; i<texCoord.size(); i++) {
+					texCoord[i].resize(4);
+				}
+				break;
+			}
+		case 12:
+			{
+				for (int i=0; i<texCoord.size(); i++) {
+					texCoord[i].resize(5);
+				}
+				break;
+			}
+		default:
+			break;
+	}
+	vector<myCoordinates> vertices=p.vertices;
+	vector<vector<int> > faces=p.faces;
+	for (int i=0; i<texCoord.size(); i++) {
+		for (int j=0; j<texCoord[i].size(); j++) {
+			texCoord[i][j]=make_pair(vertices[faces[i][j]].x+0.5,vertices[faces[i][j]].y+0.5);
+		}
+	}
+}
 
 void display(){
 //	cout << update << endl;
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
 	if (open) {
-	 polyhedron.bfs(sourceFace);
+		polyhedron.bfs(sourceFace);
+	}
+	if (change) {
+		initializeTexCoord(polyhedron);
+		change=false;
 	}
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   	glLoadIdentity();
@@ -108,9 +152,9 @@ void display(){
 		vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
 		if (update) {
 			texCoordMatrix=updateTexCoord(sourceFace, polyhedron);
-			update=false;
+			updateFaceTexCoord(sourceFace, polyhedron);
 		}
-		polyhedron.drawFace(sourceFace, update, texCoordMatrix);
+		polyhedron.drawFace(sourceFace, texCoord[sourceFace]);
 		for (int i=0; i<NumFaces; i++) {
 			if (i==sourceFace) {
 				continue;
@@ -123,8 +167,14 @@ void display(){
 					glRotated(angle, vecr.x, vecr.y, vecr.z);
 					glTranslatef(-vect.x, -vect.y, -vect.z);
 				}
-				polyhedron.drawFace(i, update, texCoordMatrix);
+				if (update) {
+					updateFaceTexCoord(i, polyhedron);
+				}
+				polyhedron.drawFace(i, texCoord[i]);
 			glPopMatrix();
+		}
+		if (update) {
+			update=false;
 		}
 		if (angle<pAngle) {
 			angle+=pAngle/30.0f;
@@ -136,7 +186,7 @@ void display(){
 	
 	} else {
 		for (int i=0; i<NumFaces; i++) {
-			polyhedron.drawFace(i, update, texCoordMatrix);
+			polyhedron.drawFace(i, texCoord[i]);
 		}
  
 	}
@@ -175,35 +225,36 @@ void specialKeys( int key, int x, int y ) {
  
 }
 
-int index(float r, float g, float b) {
-	for (int i=0; i<20; i++) {
-		float cr, cg, cb;
-		cr=round(r*100.0f)/100.0f;
-		cg=round(g*100.0f)/100.0f;
-		cb=round(b*100.0f)/100.0f;
-		if (colors[i][0]==cr && colors[i][1]==cg && colors[i][2]==cb) {
-			return i;
-		}
-	}
-	return -1;
-}
+//int index(float r, float g, float b) {
+//	for (int i=0; i<20; i++) {
+//		float cr, cg, cb;
+//		cr=round(r*100.0f)/100.0f;
+//		cg=round(g*100.0f)/100.0f;
+//		cb=round(b*100.0f)/100.0f;
+//		if (colors[i][0]==cr && colors[i][1]==cg && colors[i][2]==cb) {
+//			return i;
+//		}
+//	}
+//	return -1;
+//}
 
 void myMouse(int b, int s, int x, int y) {
 	if (b==GLUT_LEFT_BUTTON) {
 		if (s==GLUT_UP) {
-			GLubyte color[3];
-			float colori[3];
-			glReadPixels(x,height-y,1,1,GL_RGB,GL_UNSIGNED_BYTE, color);
-			colori[0]=(int)color[0]/255.0f;
-			colori[1]=(int)color[1]/255.0f;
-			colori[2]=(int)color[2]/255.0f;
-			int i=index(colori[0], colori[1], colori[2]);
+//			GLubyte color[3];
+//			float colori[3];
+//			glReadPixels(x,height-y,1,1,GL_RGB,GL_UNSIGNED_BYTE, color);
+//			colori[0]=(int)color[0]/255.0f;
+//			colori[1]=(int)color[1]/255.0f;
+//			colori[2]=(int)color[2]/255.0f;
+//			int i=index(colori[0], colori[1], colori[2]);
 			if (open) {
 				open=false;
 				angle=0.0f;
 				glutPostRedisplay();
 			} else {
 				open=true;
+				update=false;
 				glutPostRedisplay();
 			}
 		}
@@ -216,26 +267,31 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=4;
 		angle=0.0f;
+		change=true;
 	} else if (key=='2') {
 		type=HEXAHEDRON;
 		open=false;
 		NumFaces=6;
 		angle=0.0f;
+		change=true;
 	} else if (key=='3') {
 		type=OCTAHEDRON;
 		open=false;
 		NumFaces=8;
 		angle=0.0f;
+		change=true;
 	} else if (key=='4') {
 		type=DODECAHEDRON;
 		open=false;
 		NumFaces=12;
 		angle=0.0f;
+		change=true;
 	} else if (key=='5') {
 		type=ICOSAHEDRON;
 		open=false;
 		NumFaces=20;
 		angle=0.0f;
+		change=true;
 	}
 	
 	glutPostRedisplay();
