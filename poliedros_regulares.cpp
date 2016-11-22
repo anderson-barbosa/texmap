@@ -7,7 +7,7 @@
  
 double rotate_y=0; 
 double rotate_x=0;
-int sourceFace;
+int sourceFace=0;
 int height;
 bool open=false;
 GLfloat angle=0;
@@ -34,6 +34,9 @@ GLfloat colors[][3]={{1.0, 0.0, 0.0},    // vermelho
 					{0.55, 0.14, 0.14}}; // escarlata    
 int type=TETRAHEDRON;
 int NumFaces=4;
+vector<vector<GLfloat> > texCoordMatrix;
+bool update=false;
+
 
 GLuint textureID;
 AUX_RGBImageRec *myPixelArray; 
@@ -52,8 +55,42 @@ AUX_RGBImageRec *LoadBMP(char *Filename){
 	return NULL;			
 }
 
+vector<vector<GLfloat> > updateTexCoord(int i, Polyhedron ph) {
+	vector<myCoordinates> vertices=ph.vertices;
+	vector<vector<int> > faces=ph.faces;
+	myCoordinates u=sub(vertices[faces[i][1]],vertices[faces[i][0]]);
+	myCoordinates v=sub(vertices[faces[i][2]],vertices[faces[i][1]]);
+	myCoordinates n=normalize(crossProduct(u,v));
+	GLfloat mv[16];
+	glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+	vector<vector<GLfloat> > modelview(4);
+	for (int j=0; j<4; j++) {
+		modelview[j].resize(4);
+		modelview[j][0]=mv[0+j*4];
+		modelview[j][1]=mv[1+j*4];
+		modelview[j][2]=mv[2+j*4];
+		modelview[j][3]=mv[3+j*4];
+	}
+	modelview=transpose(modelview);
+	vector<vector<GLfloat> > newn=normalize(multMatrix(modelview,coToVe(n,0)));
+	vector<vector<GLfloat> > v1=multMatrix(modelview, coToVe(u,0));
+	vector<vector<GLfloat> > nv=coToVe(crossProduct(veToCo(newn),veToCo(v1)),0);
+	vector<vector<GLfloat> > p=multMatrix(modelview,coToVe(vertices[faces[i][0]],1));
+	vector<vector<GLfloat> > marray[]={v1, nv, newn, p};
+	vector<vector<GLfloat> > m(4);
+	for (int k=0; k<4; k++) {
+		m[k].resize(4);
+		for (int l=0; l<4; l++) {
+			m[k][l]=marray[l][k][0];
+		}
+	}
+	m=inverse(m);
+	return m;
+}
+
 
 void display(){
+//	cout << update << endl;
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
 	if (open) {
@@ -61,16 +98,21 @@ void display(){
 	}
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   	glLoadIdentity();
-    glOrtho(-1,1,-1,1,-4,4) ;
+  	glMatrixMode(GL_PROJECTION);
+  	glLoadIdentity();
+    glOrtho(-3,3,-3,3,-3,3);
+    glMatrixMode(GL_MODELVIEW);
   	glRotatef( rotate_x, 1.0, 0.0, 0.0 );
  	glRotatef( rotate_y, 0.0, 1.0, 0.0 );
-	
-	
 	if (open) {
 		vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
+		if (update) {
+			texCoordMatrix=updateTexCoord(sourceFace, polyhedron);
+			update=false;
+		}
+		polyhedron.drawFace(sourceFace, update, texCoordMatrix);
 		for (int i=0; i<NumFaces; i++) {
-			if (i==0) {
-				polyhedron.drawFace(i, open);
+			if (i==sourceFace) {
 				continue;
 			}
 			glPushMatrix();
@@ -81,20 +123,20 @@ void display(){
 					glRotated(angle, vecr.x, vecr.y, vecr.z);
 					glTranslatef(-vect.x, -vect.y, -vect.z);
 				}
-				polyhedron.drawFace(i, open);
+				polyhedron.drawFace(i, update, texCoordMatrix);
 			glPopMatrix();
 		}
-
 		if (angle<pAngle) {
 			angle+=pAngle/30.0f;
-			if (angle>pAngle) {
+			if (angle>=pAngle) {
 				angle=pAngle;
+				update=true;
 			}
 		}
 	
 	} else {
 		for (int i=0; i<NumFaces; i++) {
-			polyhedron.drawFace(i, open);
+			polyhedron.drawFace(i, update, texCoordMatrix);
 		}
  
 	}
@@ -242,6 +284,21 @@ void initializations() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	
+	
+	
+	GLfloat tcArray[][4] = { {1.0f, 0.0f, 0.0f, 0.5f},
+							 {0.0f, 1.0f, 0.0f, 0.5f},
+							 {0.0f, 0.0f, 1.0f, 0.0f},
+							 {0.0f, 0.0f, 0.0f, 1.0f},
+							};
+	texCoordMatrix.resize(4);
+	for (int i=0; i<4; i++) {
+		texCoordMatrix[i].resize(4);
+		for (int j=0; j<4; j++) {
+			texCoordMatrix[i][j]=tcArray[i][j];
+		}
+		
+	}
 	
 }
  
