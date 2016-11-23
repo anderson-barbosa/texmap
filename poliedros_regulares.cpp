@@ -221,6 +221,54 @@ void specialKeys( int key, int x, int y ) {
  
 }
 
+void polyhedronMenu(int option) {
+	switch (option) {
+		case 0:
+			type = TETRAHEDRON;
+			NumFaces = 4;
+			break;
+		case 1:
+			type = HEXAHEDRON;
+			NumFaces = 6;
+			break;
+		case 2:
+			type = OCTAHEDRON;
+			NumFaces = 8;
+			break;
+		case 3:
+			type = DODECAHEDRON;
+			NumFaces = 12;
+			break;
+		case 4:
+			type = ICOSAHEDRON;
+			NumFaces = 20;
+			break;
+	}
+	open=false;
+	angle=0.0f;
+	change=true;
+}
+
+void mainMenu(int option){
+
+}
+
+void createMenu() {
+	int menu, submenu1;
+	
+	submenu1 = glutCreateMenu(polyhedronMenu);
+	glutAddMenuEntry("Tetraedro",0);
+	glutAddMenuEntry("Hexaedro",1);
+	glutAddMenuEntry("Octaedro",2);
+	glutAddMenuEntry("Dodecaedro",3);
+	glutAddMenuEntry("Icosaedro",4);
+	
+	menu = glutCreateMenu(mainMenu);
+	glutAddSubMenu("Poliedro",submenu1);
+	
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+}
+
 void myMouse(int b, int s, int x, int y) {
 	if (b==GLUT_LEFT_BUTTON) {
 		if (s==GLUT_UP) {
@@ -232,6 +280,12 @@ void myMouse(int b, int s, int x, int y) {
 				update=false;
 				glutPostRedisplay();
 			}
+		}
+	}
+	if (b==GLUT_RIGHT_BUTTON) {
+		if (s==GLUT_UP) {
+			createMenu();
+			glutPostRedisplay();
 		}
 	}
 }
