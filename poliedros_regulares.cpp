@@ -169,11 +169,20 @@ void display(){
 				myCoordinates vect=transformations[i][j].first;
 				glTranslatef(vect.x, vect.y, vect.z);
 				myCoordinates vecr=transformations[i][j].second;
-				glRotated(angle, vecr.x, vecr.y, vecr.z);
+				glRotated(pAngle, vecr.x, vecr.y, vecr.z);
 				glTranslatef(-vect.x, -vect.y, -vect.z);
 			}
 			if (update) {
 				updateFaceTexCoord(i, polyhedron);
+			}
+		glPopMatrix();
+		glPushMatrix();
+			for (int j=transformations[i].size()-1; j>=0; j--) {
+				myCoordinates vect=transformations[i][j].first;
+				glTranslatef(vect.x, vect.y, vect.z);
+				myCoordinates vecr=transformations[i][j].second;
+				glRotated(angle, vecr.x, vecr.y, vecr.z);
+				glTranslatef(-vect.x, -vect.y, -vect.z);
 			}
 			polyhedron.drawFace(i, texCoord[i]);
 		glPopMatrix();
@@ -185,7 +194,6 @@ void display(){
 		angle+=pAngle/30.0f;
 		if (angle>=pAngle) {
 			angle=pAngle;
-			update=true;
 		}
 	}
 	if (angle>0 && !open) {
@@ -304,7 +312,7 @@ void myMouse(int b, int s, int x, int y) {
 				glutPostRedisplay();
 			} else {
 				open=true;
-				update=false;
+				update=true;
 				glutPostRedisplay();
 			}
 		}
