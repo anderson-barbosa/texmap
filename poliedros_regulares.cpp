@@ -4,6 +4,9 @@
 #include <math.h>
 #define GL_GLEXT_PROTOTYPES
 #include <GL/GLAux.h>
+
+#define BFS 10
+#define DFS 11
  
 double rotate_y=0; 
 double rotate_x=0;
@@ -13,6 +16,7 @@ bool open=false;
 GLfloat angle=0;
 GLfloat pAngle; 
 int type=TETRAHEDRON;
+int searchType=BFS;
 int NumFaces=4;
 vector<vector<GLfloat> > texCoordMatrix;
 vector<vector<pair<GLfloat, GLfloat> > > texCoord;
@@ -133,7 +137,11 @@ void display(){
 //	cout << update << endl;
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
-	polyhedron.dfs(sourceFace);
+	if (searchType==BFS){
+		polyhedron.bfs(sourceFace);
+	} else if (searchType==DFS) {
+		polyhedron.dfs(sourceFace);
+	}
 	if (change) {
 		initializeTexCoord(polyhedron);
 		change=false;
@@ -249,12 +257,26 @@ void polyhedronMenu(int option) {
 	change=true;
 }
 
+void searchMenu(int option) {
+	switch (option){
+		case 0:
+			searchType=BFS;
+			break;
+		case 1:
+			searchType=DFS;
+			break;
+	}
+	open=false;
+	angle=0.0f;
+	change=true;
+}
+
 void mainMenu(int option){
 
 }
 
 void createMenu() {
-	int menu, submenu1;
+	int menu, submenu1, submenu2;
 	
 	submenu1 = glutCreateMenu(polyhedronMenu);
 	glutAddMenuEntry("Tetraedro",0);
@@ -263,8 +285,13 @@ void createMenu() {
 	glutAddMenuEntry("Dodecaedro",3);
 	glutAddMenuEntry("Icosaedro",4);
 	
+	submenu2 = glutCreateMenu(searchMenu);
+	glutAddMenuEntry("BFS", 0);
+	glutAddMenuEntry("DFS", 1);
+	
 	menu = glutCreateMenu(mainMenu);
 	glutAddSubMenu("Poliedro",submenu1);
+	glutAddSubMenu("Tipo de busca",submenu2);
 	
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
