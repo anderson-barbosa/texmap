@@ -133,7 +133,7 @@ void display(){
 //	cout << update << endl;
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
-	polyhedron.bfs(sourceFace);
+	polyhedron.dfs(sourceFace);
 	if (change) {
 		initializeTexCoord(polyhedron);
 		change=false;
