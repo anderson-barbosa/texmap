@@ -133,9 +133,7 @@ void display(){
 //	cout << update << endl;
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
-	if (open) {
-		polyhedron.bfs(sourceFace);
-	}
+	polyhedron.bfs(sourceFace);
 	if (change) {
 		initializeTexCoord(polyhedron);
 		change=false;
@@ -148,47 +146,45 @@ void display(){
     glMatrixMode(GL_MODELVIEW);
   	glRotatef( rotate_x, 1.0, 0.0, 0.0 );
  	glRotatef( rotate_y, 0.0, 1.0, 0.0 );
-	if (open) {
-		vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
-		if (update) {
-			texCoordMatrix=updateTexCoord(sourceFace, polyhedron);
-			updateFaceTexCoord(sourceFace, polyhedron);
+	vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
+	if (update) {
+		texCoordMatrix=updateTexCoord(sourceFace, polyhedron);
+		updateFaceTexCoord(sourceFace, polyhedron);
+	}
+	polyhedron.drawFace(sourceFace, texCoord[sourceFace]);
+	for (int i=0; i<NumFaces; i++) {
+		if (i==sourceFace) {
+			continue;
 		}
-		polyhedron.drawFace(sourceFace, texCoord[sourceFace]);
-		for (int i=0; i<NumFaces; i++) {
-			if (i==sourceFace) {
-				continue;
+		glPushMatrix();
+			for (int j=transformations[i].size()-1; j>=0; j--) {
+				myCoordinates vect=transformations[i][j].first;
+				glTranslatef(vect.x, vect.y, vect.z);
+				myCoordinates vecr=transformations[i][j].second;
+				glRotated(angle, vecr.x, vecr.y, vecr.z);
+				glTranslatef(-vect.x, -vect.y, -vect.z);
 			}
-			glPushMatrix();
-				for (int j=transformations[i].size()-1; j>=0; j--) {
-					myCoordinates vect=transformations[i][j].first;
-					glTranslatef(vect.x, vect.y, vect.z);
-					myCoordinates vecr=transformations[i][j].second;
-					glRotated(angle, vecr.x, vecr.y, vecr.z);
-					glTranslatef(-vect.x, -vect.y, -vect.z);
-				}
-				if (update) {
-					updateFaceTexCoord(i, polyhedron);
-				}
-				polyhedron.drawFace(i, texCoord[i]);
-			glPopMatrix();
-		}
-		if (update) {
-			update=false;
-		}
-		if (angle<pAngle) {
-			angle+=pAngle/30.0f;
-			if (angle>=pAngle) {
-				angle=pAngle;
-				update=true;
+			if (update) {
+				updateFaceTexCoord(i, polyhedron);
 			}
-		}
-	
-	} else {
-		for (int i=0; i<NumFaces; i++) {
 			polyhedron.drawFace(i, texCoord[i]);
+		glPopMatrix();
+	}
+	if (update) {
+		update=false;
+	}
+	if (angle<pAngle && open) {
+		angle+=pAngle/30.0f;
+		if (angle>=pAngle) {
+			angle=pAngle;
+			update=true;
 		}
- 
+	}
+	if (angle>0 && !open) {
+		angle-=pAngle/30.0f;
+		if (angle<0) {
+			angle=0;
+		}
 	}
     glFlush();
     glutSwapBuffers();
@@ -197,7 +193,7 @@ void display(){
 
 void myTimer(int id) {
 	glutPostRedisplay();
-	glutTimerFunc(50, myTimer, 0);
+	glutTimerFunc(25, myTimer, 0);
 }
  
 void myReshape(int w, int h) {
@@ -225,32 +221,11 @@ void specialKeys( int key, int x, int y ) {
  
 }
 
-//int index(float r, float g, float b) {
-//	for (int i=0; i<20; i++) {
-//		float cr, cg, cb;
-//		cr=round(r*100.0f)/100.0f;
-//		cg=round(g*100.0f)/100.0f;
-//		cb=round(b*100.0f)/100.0f;
-//		if (colors[i][0]==cr && colors[i][1]==cg && colors[i][2]==cb) {
-//			return i;
-//		}
-//	}
-//	return -1;
-//}
-
 void myMouse(int b, int s, int x, int y) {
 	if (b==GLUT_LEFT_BUTTON) {
 		if (s==GLUT_UP) {
-//			GLubyte color[3];
-//			float colori[3];
-//			glReadPixels(x,height-y,1,1,GL_RGB,GL_UNSIGNED_BYTE, color);
-//			colori[0]=(int)color[0]/255.0f;
-//			colori[1]=(int)color[1]/255.0f;
-//			colori[2]=(int)color[2]/255.0f;
-//			int i=index(colori[0], colori[1], colori[2]);
 			if (open) {
 				open=false;
-				angle=0.0f;
 				glutPostRedisplay();
 			} else {
 				open=true;
