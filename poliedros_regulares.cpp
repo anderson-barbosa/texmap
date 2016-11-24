@@ -17,6 +17,7 @@ GLfloat angle=0;
 GLfloat pAngle; 
 int type=TETRAHEDRON;
 int searchType=BFS;
+char * imageFile = (char *)"bananas.bmp";
 int NumFaces=4;
 vector<vector<GLfloat> > texCoordMatrix;
 vector<vector<pair<GLfloat, GLfloat> > > texCoord;
@@ -237,6 +238,67 @@ void specialKeys( int key, int x, int y ) {
  
 }
 
+void initializations() {
+	glClearColor(0.0, 0.0, 0.0, 1.0); // intentionally background
+	glEnable(GL_NORMALIZE); // normalize normal vectors
+	glShadeModel(GL_SMOOTH); // do smooth shading
+	glEnable(GL_LIGHTING); // enable lighting
+	// ambient light (red)
+	GLfloat ambientIntensity[4] = {0.8, 0.8, 0.8, 1.0};
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientIntensity);
+	// set up light 0 properties
+	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0}; // white
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lt0Intensity);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lt0Intensity);
+	GLfloat lt0Position[4] = {2.0, 4.0, 5.0, 1.0}; // location
+	glLightfv(GL_LIGHT0, GL_POSITION, lt0Position);
+	// attenuation params (a,b,c)
+	glLightf (GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.0);
+	glLightf (GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
+	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
+	glEnable(GL_LIGHT0);
+	
+	
+	myPixelArray = LoadBMP(imageFile);
+	GLuint textureID; // the ID of this texture
+	glGenTextures(1, &textureID); // assign texture ID
+	glBindTexture(GL_TEXTURE_2D, textureID); // make this the active texture
+	//
+	// ... input image nRows x nCols into RGB array myPixelArray
+	//
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, myPixelArray->sizeX, myPixelArray->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, myPixelArray->data);
+	// generate mipmaps (see below)
+//	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, nCols, nRows, GL_RGB,	GL_UNSIGNED_BYTE, myPixelArray);
+	
+	glEnable(GL_TEXTURE_2D); // enable texturing
+	glBindTexture(GL_TEXTURE_2D, textureID); // select the active texture
+	// (use GL_REPLACE below for skyboxes)
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	// repeat texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// reasonable filter choices
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	
+	
+	
+	GLfloat tcArray[][4] = { {1.0f, 0.0f, 0.0f, 0.5f},
+							 {0.0f, 1.0f, 0.0f, 0.5f},
+							 {0.0f, 0.0f, 1.0f, 0.0f},
+							 {0.0f, 0.0f, 0.0f, 1.0f},
+							};
+	texCoordMatrix.resize(4);
+	for (int i=0; i<4; i++) {
+		texCoordMatrix[i].resize(4);
+		for (int j=0; j<4; j++) {
+			texCoordMatrix[i][j]=tcArray[i][j];
+		}
+		
+	}
+	
+}
+
 void polyhedronMenu(int option) {
 	switch (option) {
 		case 0:
@@ -279,12 +341,24 @@ void searchMenu(int option) {
 	change=true;
 }
 
-void mainMenu(int option){
+void textureMenu(int option) {
+	switch(option) {
+		case 0:
+			imageFile=(char *)"bananas.bmp";
+			break;
+		case 1:
+			imageFile=(char *)"arvore-de-natal.bmp";
+			break;
+	}
+	initializations();
+}
 
+void mainMenu(int option){
+	
 }
 
 void createMenu() {
-	int menu, submenu1, submenu2;
+	int menu, submenu1, submenu2, submenu3;
 	
 	submenu1 = glutCreateMenu(polyhedronMenu);
 	glutAddMenuEntry("Tetraedro",0);
@@ -297,9 +371,14 @@ void createMenu() {
 	glutAddMenuEntry("BFS", 0);
 	glutAddMenuEntry("DFS", 1);
 	
+	submenu3 = glutCreateMenu(textureMenu);
+	glutAddMenuEntry("Bananas", 0);
+	glutAddMenuEntry("Árvore de Natal", 1);
+	
 	menu = glutCreateMenu(mainMenu);
 	glutAddSubMenu("Poliedro",submenu1);
 	glutAddSubMenu("Tipo de busca",submenu2);
+	glutAddSubMenu("Textura", submenu3);
 	
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
@@ -361,66 +440,7 @@ void myKeyboard(unsigned char key, int x, int y ) {
 	glutPostRedisplay();
 }
 
-void initializations() {
-	glClearColor(0.0, 0.0, 0.0, 1.0); // intentionally background
-	glEnable(GL_NORMALIZE); // normalize normal vectors
-	glShadeModel(GL_SMOOTH); // do smooth shading
-	glEnable(GL_LIGHTING); // enable lighting
-	// ambient light (red)
-	GLfloat ambientIntensity[4] = {0.8, 0.8, 0.8, 1.0};
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientIntensity);
-	// set up light 0 properties
-	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0}; // white
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, lt0Intensity);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, lt0Intensity);
-	GLfloat lt0Position[4] = {2.0, 4.0, 5.0, 1.0}; // location
-	glLightfv(GL_LIGHT0, GL_POSITION, lt0Position);
-	// attenuation params (a,b,c)
-	glLightf (GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.0);
-	glLightf (GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
-	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
-	glEnable(GL_LIGHT0);
-	
-	
-	myPixelArray = LoadBMP((char *)"image.bmp");
-	GLuint textureID; // the ID of this texture
-	glGenTextures(1, &textureID); // assign texture ID
-	glBindTexture(GL_TEXTURE_2D, textureID); // make this the active texture
-	//
-	// ... input image nRows x nCols into RGB array myPixelArray
-	//
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, myPixelArray->sizeX, myPixelArray->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, myPixelArray->data);
-	// generate mipmaps (see below)
-//	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, nCols, nRows, GL_RGB,	GL_UNSIGNED_BYTE, myPixelArray);
-	
-	glEnable(GL_TEXTURE_2D); // enable texturing
-	glBindTexture(GL_TEXTURE_2D, textureID); // select the active texture
-	// (use GL_REPLACE below for skyboxes)
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	// repeat texture
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// reasonable filter choices
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	
-	
-	
-	GLfloat tcArray[][4] = { {1.0f, 0.0f, 0.0f, 0.5f},
-							 {0.0f, 1.0f, 0.0f, 0.5f},
-							 {0.0f, 0.0f, 1.0f, 0.0f},
-							 {0.0f, 0.0f, 0.0f, 1.0f},
-							};
-	texCoordMatrix.resize(4);
-	for (int i=0; i<4; i++) {
-		texCoordMatrix[i].resize(4);
-		for (int j=0; j<4; j++) {
-			texCoordMatrix[i][j]=tcArray[i][j];
-		}
-		
-	}
-	
-}
+
  
 int main(int argc, char* argv[]){
  
