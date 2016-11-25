@@ -12,6 +12,7 @@ double rotate_y=0;
 double rotate_x=0;
 int sourceFace=0;
 int height;
+int width;
 bool open=false;
 GLfloat angle=0;
 GLfloat pAngle; 
@@ -23,6 +24,8 @@ vector<vector<GLfloat> > texCoordMatrix;
 vector<vector<pair<GLfloat, GLfloat> > > texCoord;
 bool update=false;
 bool change=true;
+bool showEditor=false;
+pair<int, int> movingVertex=make_pair(-1,-1);
 
 
 GLuint textureID;
@@ -134,8 +137,7 @@ void initializeTexCoord(Polyhedron p) {
 	}
 }
 
-void display(){
-//	cout << update << endl;
+void drawPolyhedron() {
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
 	if (searchType==BFS){
@@ -153,6 +155,7 @@ void display(){
   	glLoadIdentity();
     glOrtho(-3,3,-3,3,-3,3);
     glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
   	glRotatef( rotate_x, 1.0, 0.0, 0.0 );
  	glRotatef( rotate_y, 0.0, 1.0, 0.0 );
 	vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
@@ -203,9 +206,49 @@ void display(){
 			angle=0;
 		}
 	}
-    glFlush();
+	glPopMatrix();
+}
+
+void drawEditor() {
+	glClearColor(0,0,0,1);
+//	glMatrixMode(GL_PROJECTION);
+//  	glLoadIdentity();
+//    glOrtho(-3,3,-3,3,-3,3);
+//    glMatrixMode(GL_MODELVIEW);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+	
+//	myPixelArray = LoadBMP(imageFile);
+//	glRasterPos2i(0,0);
+//	glDrawPixels(128,128,GL_RGB, GL_UNSIGNED_BYTE, myPixelArray->data);
+	
+	
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glLineWidth(2);
+	for (int i=0; i<NumFaces; i++) {
+		glBegin(GL_LINE_LOOP);
+			for (int j=0; j<texCoord[i].size(); j++) {
+				glVertex2f(texCoord[i][j].first, texCoord[i][j].second);
+			}
+		glEnd();	
+	}
+	glEnable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+}
+
+
+void display(){
+	if (showEditor) {
+		glViewport(width-height,0,height,height);
+		drawPolyhedron();
+		glViewport(0,0,height, height);
+		drawEditor(); 
+	} else {
+		glViewport((width-height)/2,0,height,height);
+		drawPolyhedron();
+	}
+	    glFlush();
     glutSwapBuffers();
- 
 }
 
 void myTimer(int id) {
@@ -215,7 +258,8 @@ void myTimer(int id) {
  
 void myReshape(int w, int h) {
 	height=h;
-	glViewport(0, 0, w, h);
+	width=w;
+//	glViewport(210, 0, h, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(-3.0, 3.0, -3.0, 3.0);
@@ -238,27 +282,7 @@ void specialKeys( int key, int x, int y ) {
  
 }
 
-void initializations() {
-	glClearColor(0.0, 0.0, 0.0, 1.0); // intentionally background
-	glEnable(GL_NORMALIZE); // normalize normal vectors
-	glShadeModel(GL_SMOOTH); // do smooth shading
-	glEnable(GL_LIGHTING); // enable lighting
-	// ambient light (red)
-	GLfloat ambientIntensity[4] = {0.8, 0.8, 0.8, 1.0};
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientIntensity);
-	// set up light 0 properties
-	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0}; // white
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, lt0Intensity);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, lt0Intensity);
-	GLfloat lt0Position[4] = {2.0, 4.0, 5.0, 1.0}; // location
-	glLightfv(GL_LIGHT0, GL_POSITION, lt0Position);
-	// attenuation params (a,b,c)
-	glLightf (GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.0);
-	glLightf (GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
-	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
-	glEnable(GL_LIGHT0);
-	
-	
+void initializeTexture() {
 	myPixelArray = LoadBMP(imageFile);
 	GLuint textureID; // the ID of this texture
 	glGenTextures(1, &textureID); // assign texture ID
@@ -296,7 +320,6 @@ void initializations() {
 		}
 		
 	}
-	
 }
 
 void polyhedronMenu(int option) {
@@ -325,6 +348,7 @@ void polyhedronMenu(int option) {
 	open=false;
 	angle=0.0f;
 	change=true;
+	glutPostRedisplay();
 }
 
 void searchMenu(int option) {
@@ -339,6 +363,7 @@ void searchMenu(int option) {
 	open=false;
 	angle=0.0f;
 	change=true;
+	glutPostRedisplay();
 }
 
 void textureMenu(int option) {
@@ -350,11 +375,17 @@ void textureMenu(int option) {
 			imageFile=(char *)"arvore-de-natal.bmp";
 			break;
 	}
-	initializations();
+	initializeTexture();
+	glutPostRedisplay();
 }
 
 void mainMenu(int option){
-	
+	if (!option && !showEditor) {
+		showEditor=true;
+	} else if(!option && showEditor) {
+		showEditor=false;
+	}
+	glutPostRedisplay();
 }
 
 void createMenu() {
@@ -379,20 +410,46 @@ void createMenu() {
 	glutAddSubMenu("Poliedro",submenu1);
 	glutAddSubMenu("Tipo de busca",submenu2);
 	glutAddSubMenu("Textura", submenu3);
+	glutAddMenuEntry("Mostrar/Esconder editor", 0);
 	
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
+pair<int, int> getVertex(int x, int y) {
+	for (int i=0; i<texCoord.size(); i++) {
+		for (int j=0; j<texCoord[i].size(); j++) {
+			int vx=(texCoord[i][j].first*height+3*height)/6;
+			int vy=(3*height-texCoord[i][j].second*height)/6;
+		//	cout << vx << " " << vy << endl;
+			if (vx<=x+5 && vx>=x-5 && vy<=y+5 && vy>=y-5) {
+		//		cout << "OK" << endl;
+				return make_pair(i, j);
+			}
+		}
+	}
+	return make_pair(-1, -1);
+}
+
 void myMouse(int b, int s, int x, int y) {
 	if (b==GLUT_LEFT_BUTTON) {
-		if (s==GLUT_UP) {
-			if (open) {
-				open=false;
-				glutPostRedisplay();
+		if (!showEditor || (x>height)) {
+			if (s==GLUT_UP) {
+				if (open) {
+					open=false;
+					glutPostRedisplay();
+				} else {
+					open=true;
+					update=true;
+					glutPostRedisplay();
+				}
+			}
+		}
+		else {
+			if (getVertex(x, y).first>=0 && s==GLUT_DOWN) {
+				movingVertex=getVertex(x, y);
 			} else {
-				open=true;
-				update=true;
-				glutPostRedisplay();
+				movingVertex=make_pair(-1,-1);
+			//	cout << x << " " << y << endl;
 			}
 		}
 	}
@@ -403,6 +460,21 @@ void myMouse(int b, int s, int x, int y) {
 		}
 	}
 }
+
+void myMotion(int x, int y) {
+	
+	if (movingVertex.first>=0) {
+		cout << x << " " << y << endl;
+		GLfloat new_x=(6*x-3*height)/(float)height;
+		GLfloat new_y=-(6*y-3*height)/(float)height;
+		cout << "Vertice " << new_x << " " << new_y << endl;
+		texCoord[movingVertex.first][movingVertex.second].first=new_x;
+		texCoord[movingVertex.first][movingVertex.second].second=new_y;
+		glutPostRedisplay();
+	}
+}
+
+
 
 void myKeyboard(unsigned char key, int x, int y ) {
 	if (key=='1'){
@@ -440,18 +512,40 @@ void myKeyboard(unsigned char key, int x, int y ) {
 	glutPostRedisplay();
 }
 
-
+void initializations() {
+	glClearColor(0.0, 0.0, 0.0, 1.0); // intentionally background
+	glEnable(GL_NORMALIZE); // normalize normal vectors
+	glShadeModel(GL_SMOOTH); // do smooth shading
+	glEnable(GL_LIGHTING); // enable lighting
+	// ambient light (red)
+	GLfloat ambientIntensity[4] = {0.8, 0.8, 0.8, 1.0};
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientIntensity);
+	// set up light 0 properties
+	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0}; // white
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lt0Intensity);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lt0Intensity);
+	GLfloat lt0Position[4] = {2.0, 4.0, 5.0, 1.0}; // location
+	glLightfv(GL_LIGHT0, GL_POSITION, lt0Position);
+	// attenuation params (a,b,c)
+	glLightf (GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.0);
+	glLightf (GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
+	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
+	glEnable(GL_LIGHT0);
+	initializeTexture();
+	createMenu();
+}
  
 int main(int argc, char* argv[]){
  
   glutInit(&argc,argv);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-  glutInitWindowSize(500,500);
+  glutInitWindowSize(960,540);
   glutCreateWindow("Poliedros regulares");
   glEnable(GL_DEPTH_TEST);
   glutDisplayFunc(display);
   glutSpecialFunc(specialKeys);
   glutMouseFunc(myMouse);
+  glutMotionFunc(myMotion);
   glutReshapeFunc(myReshape);
   glutTimerFunc(50, myTimer, 0);
   glutKeyboardFunc(myKeyboard);
