@@ -26,7 +26,7 @@ bool update=false;
 bool polyhedronChange=true;
 bool faceChange=true;
 bool showEditor=false;
-pair<int, int> movingVertex=make_pair(-1,-1);
+vector<pair<int, int> > movingVertices;
 
 
 GLuint textureID;
@@ -219,16 +219,27 @@ void drawEditor() {
 //  	glLoadIdentity();
 //    glOrtho(-3,3,-3,3,-3,3);
 //    glMatrixMode(GL_MODELVIEW);
-	glDisable(GL_LIGHTING);
-	glDisable(GL_TEXTURE_2D);
 	
 //	myPixelArray = LoadBMP(imageFile);
 //	glRasterPos2i(0,0);
 //	glDrawPixels(128,128,GL_RGB, GL_UNSIGNED_BYTE, myPixelArray->data);
-	
-	
+	glDisable(GL_LIGHTING);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	for (int i=0; i<6; i++) {
+		for (int j=0; j<6; j++) {
+			glBegin(GL_POLYGON);
+				glTexCoord2d(0.0f, 0.0f); glVertex3f(i-3,j-3,-1);
+				glTexCoord2d(1.0f, 0.0f); glVertex3f(i-2,j-3,-1);
+				glTexCoord2d(1.0f, 1.0f); glVertex3f(i-2,j-2,-1);
+				glTexCoord2d(0.0f, 1.0f); glVertex3f(i-3,j-2,-1);
+				
+			glEnd();
+		}
+	}
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glDisable(GL_TEXTURE_2D);
 	glColor3f(0.0f, 0.0f, 1.0f);
-	glLineWidth(2);
+	glLineWidth(3);
 	for (int i=0; i<NumFaces; i++) {
 		glBegin(GL_LINE_LOOP);
 			for (int j=0; j<texCoord[i].size(); j++) {
@@ -421,7 +432,8 @@ void createMenu() {
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
-pair<int, int> getVertex(int x, int y) {
+vector<pair<int, int> > getVertex(int x, int y) {
+	vector<pair<int, int> > ret;
 	for (int i=0; i<texCoord.size(); i++) {
 		for (int j=0; j<texCoord[i].size(); j++) {
 			int vx=(texCoord[i][j].first*height+3*height)/6;
@@ -429,11 +441,11 @@ pair<int, int> getVertex(int x, int y) {
 		//	cout << vx << " " << vy << endl;
 			if (vx<=x+5 && vx>=x-5 && vy<=y+5 && vy>=y-5) {
 		//		cout << "OK" << endl;
-				return make_pair(i, j);
+				ret.push_back(make_pair(i, j));
 			}
 		}
 	}
-	return make_pair(-1, -1);
+	return ret;
 }
 
 void myMouse(int b, int s, int x, int y) {
@@ -451,10 +463,11 @@ void myMouse(int b, int s, int x, int y) {
 			}
 		}
 		else {
-			if (getVertex(x, y).first>=0 && s==GLUT_DOWN) {
-				movingVertex=getVertex(x, y);
+			vector<pair<int, int> > v=getVertex(x, y);
+			if (v.size()>0 && s==GLUT_DOWN) {
+				movingVertices=v;
 			} else {
-				movingVertex=make_pair(-1,-1);
+				movingVertices.clear();
 			//	cout << x << " " << y << endl;
 			}
 		}
@@ -469,13 +482,13 @@ void myMouse(int b, int s, int x, int y) {
 
 void myMotion(int x, int y) {
 	
-	if (movingVertex.first>=0) {
-		cout << x << " " << y << endl;
+	for (int i=0; i<movingVertices.size(); i++) {
+	//	cout << x << " " << y << endl;
 		GLfloat new_x=(6*x-3*height)/(float)height;
 		GLfloat new_y=-(6*y-3*height)/(float)height;
 		cout << "Vertice " << new_x << " " << new_y << endl;
-		texCoord[movingVertex.first][movingVertex.second].first=new_x;
-		texCoord[movingVertex.first][movingVertex.second].second=new_y;
+		texCoord[movingVertices[i].first][movingVertices[i].second].first=new_x;
+		texCoord[movingVertices[i].first][movingVertices[i].second].second=new_y;
 		glutPostRedisplay();
 	}
 }
