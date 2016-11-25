@@ -23,7 +23,8 @@ int NumFaces=4;
 vector<vector<GLfloat> > texCoordMatrix;
 vector<vector<pair<GLfloat, GLfloat> > > texCoord;
 bool update=false;
-bool change=true;
+bool polyhedronChange=true;
+bool faceChange=true;
 bool showEditor=false;
 pair<int, int> movingVertex=make_pair(-1,-1);
 
@@ -145,9 +146,9 @@ void drawPolyhedron() {
 	} else if (searchType==DFS) {
 		polyhedron.dfs(sourceFace);
 	}
-	if (change) {
+	if (polyhedronChange) {
 		initializeTexCoord(polyhedron);
-		change=false;
+		polyhedronChange=false;
 	}
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   	glLoadIdentity();
@@ -159,7 +160,7 @@ void drawPolyhedron() {
   	glRotatef( rotate_x, 1.0, 0.0, 0.0 );
  	glRotatef( rotate_y, 0.0, 1.0, 0.0 );
 	vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
-	if (update) {
+	if (update && faceChange) {
 		texCoordMatrix=updateTexCoord(sourceFace, polyhedron);
 		updateFaceTexCoord(sourceFace, polyhedron);
 	}
@@ -176,7 +177,7 @@ void drawPolyhedron() {
 				glRotated(pAngle, vecr.x, vecr.y, vecr.z);
 				glTranslatef(-vect.x, -vect.y, -vect.z);
 			}
-			if (update) {
+			if (update && faceChange) {
 				updateFaceTexCoord(i, polyhedron);
 			}
 		glPopMatrix();
@@ -193,6 +194,9 @@ void drawPolyhedron() {
 	}
 	if (update) {
 		update=false;
+		if (faceChange) {
+		faceChange=false;
+	}
 	}
 	if (angle<pAngle && open) {
 		angle+=pAngle/30.0f;
@@ -347,7 +351,8 @@ void polyhedronMenu(int option) {
 	}
 	open=false;
 	angle=0.0f;
-	change=true;
+	polyhedronChange=true;
+	faceChange=true;
 	glutPostRedisplay();
 }
 
@@ -362,7 +367,8 @@ void searchMenu(int option) {
 	}
 	open=false;
 	angle=0.0f;
-	change=true;
+	polyhedronChange=true;
+	faceChange=true;
 	glutPostRedisplay();
 }
 
@@ -482,31 +488,36 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=4;
 		angle=0.0f;
-		change=true;
+		polyhedronChange=true;
+		faceChange=true;
 	} else if (key=='2') {
 		type=HEXAHEDRON;
 		open=false;
 		NumFaces=6;
 		angle=0.0f;
-		change=true;
+		polyhedronChange=true;
+		faceChange=true;
 	} else if (key=='3') {
 		type=OCTAHEDRON;
 		open=false;
 		NumFaces=8;
 		angle=0.0f;
-		change=true;
+		polyhedronChange=true;
+		faceChange=true;
 	} else if (key=='4') {
 		type=DODECAHEDRON;
 		open=false;
 		NumFaces=12;
 		angle=0.0f;
-		change=true;
+		polyhedronChange=true;
+		faceChange=true;
 	} else if (key=='5') {
 		type=ICOSAHEDRON;
 		open=false;
 		NumFaces=20;
 		angle=0.0f;
-		change=true;
+		polyhedronChange=true;
+		faceChange=true;
 	}
 	
 	glutPostRedisplay();
