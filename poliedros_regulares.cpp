@@ -1,5 +1,6 @@
 #include "myClasses.h"
 #include <stdio.h>
+#include <climits>
 #include <stdarg.h>
 #include <math.h>
 #define GL_GLEXT_PROTOTYPES
@@ -27,6 +28,8 @@ bool polyhedronChange=true;
 bool faceChange=true;
 bool showEditor=false;
 vector<pair<int, int> > movingVertices;
+int max_x, max_y = INT_MIN;
+int min_x, min_y = INT_MAX;
 
 
 GLuint textureID;
@@ -97,6 +100,10 @@ void updateFaceTexCoord(int i, Polyhedron p) {
 		vector<vector<GLfloat> > tc = multMatrix(texCoordMatrix, multMatrix(modelview, coToVe(vertices[face[j]],1)));
 		texCoord[i][j].first=tc[0][0];
 		texCoord[i][j].second=tc[1][0];
+		max_x = ceil(max(texCoord[i][j].first, (float)max_x));
+		max_y = ceil(max(texCoord[i][j].second, (float)max_y));
+		min_x = floor(min(texCoord[i][j].first, (float)min_x));
+		min_y = floor(min(texCoord[i][j].second, (float)min_y));
 	}
 }
 
@@ -161,6 +168,10 @@ void drawPolyhedron() {
  	glRotatef( rotate_y, 0.0, 1.0, 0.0 );
 	vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
 	if (update && faceChange) {
+		max_x = 3;
+		max_y =  3;
+		min_x = -3;
+		min_y = -3;
 		texCoordMatrix=updateTexCoord(sourceFace, polyhedron);
 		updateFaceTexCoord(sourceFace, polyhedron);
 	}
@@ -195,8 +206,17 @@ void drawPolyhedron() {
 	if (update) {
 		update=false;
 		if (faceChange) {
-		faceChange=false;
-	}
+			faceChange=false;
+		}
+		max_x = max(max(max_x, max_y), 3);
+		max_y = max(max(max_x, max_y), 3);
+		min_x = min(min(min_x, min_y),-3);
+		min_y = min(min(min_x, min_y),-3);
+		
+		max_x = max(abs(min_x),max_x);
+		max_y = max_x;
+		min_x = -max_x;
+		min_y = -max_y;
 	}
 	if (angle<pAngle && open) {
 		angle+=pAngle/30.0f;
@@ -220,9 +240,6 @@ void drawEditor() {
 //    glOrtho(-3,3,-3,3,-3,3);
 //    glMatrixMode(GL_MODELVIEW);
 	
-//	myPixelArray = LoadBMP(imageFile);
-//	glRasterPos2i(0,0);
-//	glDrawPixels(128,128,GL_RGB, GL_UNSIGNED_BYTE, myPixelArray->data);
 	glDisable(GL_LIGHTING);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	for (int i=0; i<6; i++) {
@@ -253,13 +270,25 @@ void drawEditor() {
 
 
 void display(){
+	int x, y, w, h;
 	if (showEditor) {
-		glViewport(width-height,0,height,height);
+		if (width>=2*height) {
+			x = floor((width-2*height)/2.0);
+			y = 0;
+		//	w=2*height;
+			h=height;
+		} else {
+			x = 0;
+			y = floor((height-width/2)/2.0);
+		//	w=width;
+			h=w/2;
+		}
+		glViewport(x+h,y,h,h);
 		drawPolyhedron();
-		glViewport(0,0,height, height);
+		glViewport(x,y,h, h);
 		drawEditor(); 
 	} else {
-		glViewport((width-height)/2,0,height,height);
+		glViewport(max((width-height)/2,0), max(0, (height-width)/2), min(width,height), min(width, height));
 		drawPolyhedron();
 	}
 	    glFlush();
@@ -391,6 +420,9 @@ void textureMenu(int option) {
 		case 1:
 			imageFile=(char *)"arvore-de-natal.bmp";
 			break;
+		case 2:
+			imageFile=(char *)"papai-noel.bmp";
+			break;
 	}
 	initializeTexture();
 	glutPostRedisplay();
@@ -422,6 +454,7 @@ void createMenu() {
 	submenu3 = glutCreateMenu(textureMenu);
 	glutAddMenuEntry("Bananas", 0);
 	glutAddMenuEntry("Árvore de Natal", 1);
+	glutAddMenuEntry("Papai Noel",2);
 	
 	menu = glutCreateMenu(mainMenu);
 	glutAddSubMenu("Poliedro",submenu1);
@@ -480,9 +513,10 @@ void myMotion(int x, int y) {
 	//	cout << x << " " << y << endl;
 		GLfloat new_x=(6*x-3*height)/(float)height;
 		GLfloat new_y=-(6*y-3*height)/(float)height;
-		cout << "Vertice " << new_x << " " << new_y << endl;
-		texCoord[movingVertices[i].first][movingVertices[i].second].first=new_x;
-		texCoord[movingVertices[i].first][movingVertices[i].second].second=new_y;
+	//	cout << "Vertice " << new_x << " " << new_y << endl;
+	    cout << max_x << " " << min_x << " " << max_y << " " << min_y << endl;
+		texCoord[movingVertices[i].first][movingVertices[i].second].first=max(min(new_x, (float)max_x), (float)min_x);
+		texCoord[movingVertices[i].first][movingVertices[i].second].second=max(min(new_y, (float)max_y), (float)min_y);
 		glutPostRedisplay();
 	}
 }
@@ -557,7 +591,7 @@ int main(int argc, char* argv[]){
  
   glutInit(&argc,argv);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-  glutInitWindowSize(960,540);
+  glutInitWindowSize(1080,540);
   glutCreateWindow("Poliedros regulares");
   glEnable(GL_DEPTH_TEST);
   glutDisplayFunc(display);
