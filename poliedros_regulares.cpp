@@ -472,12 +472,6 @@ void myMouse(int b, int s, int x, int y) {
 			}
 		}
 	}
-	if (b==GLUT_RIGHT_BUTTON) {
-		if (s==GLUT_UP) {
-			createMenu();
-			glutPostRedisplay();
-		}
-	}
 }
 
 void myMotion(int x, int y) {
