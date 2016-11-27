@@ -169,22 +169,48 @@ vector<vector<GLfloat> > multMatrix(vector<vector<GLfloat> > a, vector<vector<GL
 	return ret;
 }
 
-	vector<vector<GLfloat> > coToVe(myCoordinates v, int w) {
-		vector<vector<GLfloat> > ret(4);
-		ret[0].push_back(v.x);
-		ret[1].push_back(v.y);
-		ret[2].push_back(v.z);
-		ret[3].push_back(w);
-		return ret;
+int Orientation3p(vector<vector<GLfloat> > p, vector<vector<GLfloat> > q, vector<vector<GLfloat> > r) {
+//	cout << "OK" << endl;
+	vector<vector<GLfloat> > a[3]={p, q, r};
+	vector<vector<GLfloat> > matrix(3);
+	for (int i=0; i<3; i++) {
+		matrix[i].resize(3);
+		matrix[0][i]=1;
+		if (i==0) {
+			continue;
+		}
+	//	cout << "OK" << endl;
+		for (int j=0; j<3; j++) {
+			matrix[i][j]=a[j][i-1][0];
+		}
+
 	}
-	
-	myCoordinates veToCo(vector<vector<GLfloat> > v) {
-		myCoordinates ret;
-		ret.x=v[0][0];
-		ret.y=v[1][0];
-		ret.z=v[2][0];
-		return ret;
+//	cout << "OK" << endl;
+	int det=determinant(matrix);
+	if (det>0) {
+		return 1;
+	} else if (det<0) {
+		return -1;
 	}
+	return 0;	
+}
+
+vector<vector<GLfloat> > coToVe(myCoordinates v, int w) {
+	vector<vector<GLfloat> > ret(4);
+	ret[0].push_back(v.x);
+	ret[1].push_back(v.y);
+	ret[2].push_back(v.z);
+	ret[3].push_back(w);
+	return ret;
+}
+
+myCoordinates veToCo(vector<vector<GLfloat> > v) {
+	myCoordinates ret;
+	ret.x=v[0][0];
+	ret.y=v[1][0];
+	ret.z=v[2][0];
+	return ret;
+}
 
 class Polyhedron {
 public:
