@@ -509,8 +509,8 @@ vector<pair<int, int> > getVertex(int x, int y) {
 	vector<pair<int, int> > ret;
 	for (int i=0; i<texCoord.size(); i++) {
 		for (int j=0; j<texCoord[i].size(); j++) {
-			int vx=((texCoord[i][j].first*height+3*height)/6+dx) * (3.0/max_x);
-			int vy=((3*height-texCoord[i][j].second*height)/6+dy) * (3.0/max_y);
+			int vx=(texCoord[i][j].first*(3.0/max_x)+3)*height/6.0+dx;
+			int vy=(-texCoord[i][j].second*(3.0/max_y)+3)*height/6.0+dy;
 		//	cout << vx << " " << vy << endl;
 			if (vx<=x+5 && vx>=x-5 && vy<=y+5 && vy>=y-5) {
 		//		cout << "OK" << endl;
@@ -604,12 +604,12 @@ void myMotion(int x, int y) {
 	for (int i=0; i<movingVertices.size(); i++) {
 		cout << "OK" << endl;
 	//	cout << x << " " << y << endl;
-		GLfloat new_x=(6*x-3*height)/(float)height;
-		GLfloat new_y=-(6*y-3*height)/(float)height;
-	//	cout << "Vertice " << new_x << " " << new_y << endl;
+		GLfloat new_x=(max_x/3.0)*(((x-dx)*6)/(float)height-3);
+		GLfloat new_y=-(max_y/3.0)*(((y-dy)*6)/(float)height-3);
+		cout << "Vertice " << new_x << " " << new_y << endl;
 	    cout << max_x << " " << min_x << " " << max_y << " " << min_y << endl;
-		texCoord[movingVertices[i].first][movingVertices[i].second].first=(max(min(new_x, (float)max_x), (float)min_x))/(3.0/max_x);
-		texCoord[movingVertices[i].first][movingVertices[i].second].second=(max(min(new_y, (float)max_y), (float)min_y))/(3.0/max_y);
+		texCoord[movingVertices[i].first][movingVertices[i].second].first=(max(min(new_x, (float)max_x), (float)min_x));
+		texCoord[movingVertices[i].first][movingVertices[i].second].second=(max(min(new_y, (float)max_y), (float)min_y));
 		glutPostRedisplay();
 	}
 }
