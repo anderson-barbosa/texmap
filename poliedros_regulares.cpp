@@ -427,6 +427,7 @@ void polyhedronMenu(int option) {
 			NumFaces = 20;
 			break;
 	}
+	sourceFace = 0;
 	facesModelview.resize(NumFaces);
 	facesProjection.resize(NumFaces);
 	open=false;
@@ -624,6 +625,7 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		angle=0.0f;
 		polyhedronChange=true;
 		faceChange=true;
+		sourceFace = 0;
 	} else if (key=='2') {
 		type=HEXAHEDRON;
 		open=false;
@@ -631,6 +633,7 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		angle=0.0f;
 		polyhedronChange=true;
 		faceChange=true;
+		sourceFace = 0;
 	} else if (key=='3') {
 		type=OCTAHEDRON;
 		open=false;
@@ -638,6 +641,7 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		angle=0.0f;
 		polyhedronChange=true;
 		faceChange=true;
+		sourceFace = 0;
 	} else if (key=='4') {
 		type=DODECAHEDRON;
 		open=false;
@@ -645,6 +649,7 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		angle=0.0f;
 		polyhedronChange=true;
 		faceChange=true;
+		sourceFace = 0;
 	} else if (key=='5') {
 		type=ICOSAHEDRON;
 		open=false;
@@ -652,6 +657,7 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		angle=0.0f;
 		polyhedronChange=true;
 		faceChange=true;
+		sourceFace = 0;
 	}
 	facesModelview.resize(NumFaces);
 	facesProjection.resize(NumFaces);
