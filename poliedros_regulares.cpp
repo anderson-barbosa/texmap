@@ -24,7 +24,6 @@ int NumFaces=4;
 vector<vector<GLfloat> > texCoordMatrix;
 vector<vector<pair<GLfloat, GLfloat> > > texCoord;
 bool update=true;
-bool polyhedronChange=true;
 bool faceChange=true;
 bool showEditor=false;
 vector<pair<int, int> > movingVertices;
@@ -140,7 +139,7 @@ void updateFaceTexCoord(int i, Polyhedron p) {
 	}
 }
 
-void initializeTexCoord(Polyhedron p) {
+void initializeTexCoord() {
 	texCoord.resize(NumFaces);
 	switch (NumFaces) {
 		case 4:
@@ -169,13 +168,6 @@ void initializeTexCoord(Polyhedron p) {
 		default:
 			break;
 	}
-	vector<myCoordinates> vertices=p.vertices;
-	vector<vector<int> > faces=p.faces;
-	for (int i=0; i<texCoord.size(); i++) {
-		for (int j=0; j<texCoord[i].size(); j++) {
-			texCoord[i][j]=make_pair(vertices[faces[i][j]].x+0.5,vertices[faces[i][j]].y+0.5);
-		}
-	}
 }
 
 void drawPolyhedron() {
@@ -185,10 +177,6 @@ void drawPolyhedron() {
 		polyhedron.bfs(sourceFace);
 	} else if (searchType==DFS) {
 		polyhedron.dfs(sourceFace);
-	}
-	if (polyhedronChange) {
-		initializeTexCoord(polyhedron);
-		polyhedronChange=false;
 	}
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   	glLoadIdentity();
@@ -432,8 +420,8 @@ void polyhedronMenu(int option) {
 	facesProjection.resize(NumFaces);
 	open=false;
 	angle=0.0f;
-	polyhedronChange=true;
 	faceChange=true;
+	initializeTexCoord();
 	glutPostRedisplay();
 }
 
@@ -448,7 +436,6 @@ void searchMenu(int option) {
 	}
 	open=false;
 	angle=0.0f;
-	polyhedronChange=true;
 	faceChange=true;
 	glutPostRedisplay();
 }
@@ -623,7 +610,6 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=4;
 		angle=0.0f;
-		polyhedronChange=true;
 		faceChange=true;
 		sourceFace = 0;
 	} else if (key=='2') {
@@ -631,7 +617,6 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=6;
 		angle=0.0f;
-		polyhedronChange=true;
 		faceChange=true;
 		sourceFace = 0;
 	} else if (key=='3') {
@@ -639,7 +624,6 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=8;
 		angle=0.0f;
-		polyhedronChange=true;
 		faceChange=true;
 		sourceFace = 0;
 	} else if (key=='4') {
@@ -647,7 +631,6 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=12;
 		angle=0.0f;
-		polyhedronChange=true;
 		faceChange=true;
 		sourceFace = 0;
 	} else if (key=='5') {
@@ -655,10 +638,10 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=20;
 		angle=0.0f;
-		polyhedronChange=true;
 		faceChange=true;
 		sourceFace = 0;
 	}
+	initializeTexCoord();
 	facesModelview.resize(NumFaces);
 	facesProjection.resize(NumFaces);
 	glutPostRedisplay();
@@ -684,6 +667,7 @@ void initializations() {
 	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
 	glEnable(GL_LIGHT0);
 	initializeTexture();
+	initializeTexCoord();
 	createMenu();
 }
  
