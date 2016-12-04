@@ -23,8 +23,7 @@ char * imageFile = (char *)"bananas.bmp";
 int NumFaces=4;
 vector<vector<GLfloat> > texCoordMatrix;
 vector<vector<pair<GLfloat, GLfloat> > > texCoord;
-bool update=true;
-bool faceChange=true;
+bool updateTexture = true;
 bool showEditor=false;
 vector<pair<int, int> > movingVertices;
 int max_x, max_y = -3;
@@ -188,7 +187,7 @@ void drawPolyhedron() {
   	glRotatef( rotate_x, 1.0, 0.0, 0.0 );
  	glRotatef( rotate_y, 0.0, 1.0, 0.0 );
 	vector<vector<pair<myCoordinates, myCoordinates> > > transformations=polyhedron.getTransformations();
-	if (update && faceChange) {
+	if (updateTexture) {
 		max_x = 3;
 		max_y =  3;
 		min_x = -3;
@@ -203,18 +202,18 @@ void drawPolyhedron() {
 		if (i==sourceFace) {
 			continue;
 		}
-		glPushMatrix();
-			for (int j=transformations[i].size()-1; j>=0; j--) {
-				myCoordinates vect=transformations[i][j].first;
-				glTranslatef(vect.x, vect.y, vect.z);
-				myCoordinates vecr=transformations[i][j].second;
-				glRotated(pAngle, vecr.x, vecr.y, vecr.z);
-				glTranslatef(-vect.x, -vect.y, -vect.z);
-			}
-			if (update && faceChange) {
+		if (updateTexture) {
+			glPushMatrix();
+				for (int j=transformations[i].size()-1; j>=0; j--) {
+					myCoordinates vect=transformations[i][j].first;
+					glTranslatef(vect.x, vect.y, vect.z);
+					myCoordinates vecr=transformations[i][j].second;
+					glRotated(pAngle, vecr.x, vecr.y, vecr.z);
+					glTranslatef(-vect.x, -vect.y, -vect.z);
+				}
 				updateFaceTexCoord(i, polyhedron);
-			}
-		glPopMatrix();
+			glPopMatrix();
+		}
 		glPushMatrix();
 			for (int j=transformations[i].size()-1; j>=0; j--) {
 				myCoordinates vect=transformations[i][j].first;
@@ -228,11 +227,8 @@ void drawPolyhedron() {
 			polyhedron.drawFace(i, texCoord[i]);
 		glPopMatrix();
 	}
-	if (update) {
-		update=false;
-		if (faceChange) {
-			faceChange=false;
-		}
+	if (updateTexture) {
+		updateTexture = false;
 		max_x = max(max(max_x, max_y), 3);
 		max_y = max(max(max_x, max_y), 3);
 		min_x = min(min(min_x, min_y),-3);
@@ -420,7 +416,7 @@ void polyhedronMenu(int option) {
 	facesProjection.resize(NumFaces);
 	open=false;
 	angle=0.0f;
-	faceChange=true;
+	updateTexture = true;
 	initializeTexCoord();
 	glutPostRedisplay();
 }
@@ -436,7 +432,6 @@ void searchMenu(int option) {
 	}
 	open=false;
 	angle=0.0f;
-	faceChange=true;
 	glutPostRedisplay();
 }
 
@@ -567,10 +562,9 @@ void myMouse(int b, int s, int x, int y) {
 					glutPostRedisplay();
 				} else {
 					int i=index(x,y);
-					open=(i>=0);
-					update=true;
-					faceChange=(i!=sourceFace);
-					sourceFace=(i>=0 ? i : sourceFace);
+					open=(i>=0 && angle==0);
+					updateTexture = open;
+					sourceFace=(i>=0 && angle==0 ? i : sourceFace);
 					glutPostRedisplay();
 				}
 			}
@@ -610,36 +604,36 @@ void myKeyboard(unsigned char key, int x, int y ) {
 		open=false;
 		NumFaces=4;
 		angle=0.0f;
-		faceChange=true;
 		sourceFace = 0;
+		updateTexture = true;
 	} else if (key=='2') {
 		type=HEXAHEDRON;
 		open=false;
 		NumFaces=6;
 		angle=0.0f;
-		faceChange=true;
 		sourceFace = 0;
+		updateTexture = true;
 	} else if (key=='3') {
 		type=OCTAHEDRON;
 		open=false;
 		NumFaces=8;
 		angle=0.0f;
-		faceChange=true;
 		sourceFace = 0;
+		updateTexture = true;
 	} else if (key=='4') {
 		type=DODECAHEDRON;
 		open=false;
 		NumFaces=12;
 		angle=0.0f;
-		faceChange=true;
 		sourceFace = 0;
+		updateTexture = true;
 	} else if (key=='5') {
 		type=ICOSAHEDRON;
 		open=false;
 		NumFaces=20;
 		angle=0.0f;
-		faceChange=true;
 		sourceFace = 0;
+		updateTexture = true;
 	}
 	initializeTexCoord();
 	facesModelview.resize(NumFaces);
