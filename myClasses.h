@@ -519,45 +519,6 @@ public:
 			reverse(spanningTree[i].begin(), spanningTree[i].end());
 		}
 	}
-	void dfs(int sourceFace){
-		vector<bool> marking(faces.size());
-		vector<vector<int> > adjacencyVector(faces.size());
-		spanningTree.resize(faces.size());
-		for (int i=0; i<faces.size(); i++){
-			marking[i]=0;
-			spanningTree[i].clear();
-		}
-		stack<int> vstack;
-		vstack.push(sourceFace);
-		for (int i=0; i<edges.size(); i++) {
-			if (!isInVector(edges[i][2], adjacencyVector[edges[i][3]])) {
-				adjacencyVector[edges[i][3]].push_back(edges[i][2]);
-			}
-			if (!isInVector(edges[i][3], adjacencyVector[edges[i][2]])) {
-				adjacencyVector[edges[i][2]].push_back(edges[i][3]);
-			}
-		}
-		while (!vstack.empty()) {
-			int u=vstack.top();
-			vstack.pop();
-			if (marking[u]==0){
-				marking[u]=1;
-				for (int i=0; i<adjacencyVector[u].size(); i++){
-					int x=adjacencyVector[u][i];
-					vstack.push(x);
-					if (marking[x]==0){
-					spanningTree[x].clear();
-					spanningTree[x].insert(spanningTree[x].begin(),spanningTree[u].begin(), spanningTree[u].end());
-					spanningTree[x].push_back(u);
-					}
-				}
-			} 
-		}
-		for (int i=0; i<spanningTree.size(); i++) {
-			reverse(spanningTree[i].begin(), spanningTree[i].end());
-		}
-		
-	}
 	pair<myCoordinates, myCoordinates> getEdge(int face1, int face2) {
 		int i=edgePosition(face1, face2, edges);
 		for (int j=0; j<faces[face1].size(); j++) {
