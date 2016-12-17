@@ -31,7 +31,7 @@ int min_x, min_y = 3;
 int dx, dy = 0;
 vector<vector<vector<GLfloat> > > facesModelview(NumFaces);
 vector<vector<vector<GLfloat> > > facesProjection(NumFaces);
-
+bool moving = false;
 
 GLuint textureID;
 AUX_RGBImageRec *myPixelArray; 
@@ -169,6 +169,16 @@ void initializeTexCoord() {
 	}
 }
 
+void drawSquare(GLfloat centerX, GLfloat centerY) {
+	glColor3f(0.3f, 0.3f, 0.3f);
+	glBegin(GL_LINE_LOOP);
+		glVertex2f(centerX-0.1, centerY-0.1);
+		glVertex2f(centerX+0.1, centerY-0.1);
+		glVertex2f(centerX+0.1, centerY+0.1);
+		glVertex2f(centerX-0.1, centerY+0.1);
+	glEnd();
+}
+
 void drawPolyhedron() {
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
@@ -274,8 +284,14 @@ void drawEditor() {
 	}
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glDisable(GL_TEXTURE_2D);
-	glColor3f(0.0f, 0.0f, 1.0f);
+	glLineWidth(4);
+	if (moving) {
+	 	GLfloat cx = texCoord[movingVertices[0].first][movingVertices[0].second].first;
+	 	GLfloat cy = texCoord[movingVertices[0].first][movingVertices[0].second].second;
+		drawSquare(cx, cy);
+	}
 	glLineWidth(3);
+	glColor3f(0.0f, 0.0f, 1.0f);
 	for (int i=0; i<NumFaces; i++) {
 		glBegin(GL_LINE_LOOP);
 			for (int j=0; j<texCoord[i].size(); j++) {
@@ -573,8 +589,10 @@ void myMouse(int b, int s, int x, int y) {
 			vector<pair<int, int> > v=getVertex(x, y);
 			if (v.size()>0 && s==GLUT_DOWN) {
 				movingVertices=v;
+				moving = true;
 			} else {
 				movingVertices.clear();
+				moving = false;
 			//	cout << x << " " << y << endl;
 			}
 		}
