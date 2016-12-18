@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <math.h>
 #define GL_GLEXT_PROTOTYPES
+#define FORMAT 0x80E0
 #include <GL/GLAux.h>
  
 double rotate_y=0; 
@@ -28,22 +29,55 @@ int dx, dy = 0;
 vector<vector<vector<GLfloat> > > facesModelview(NumFaces);
 vector<vector<vector<GLfloat> > > facesProjection(NumFaces);
 bool moving = false;
-
+unsigned int imageWidth, imageHeight;
 GLuint textureID;
-AUX_RGBImageRec *myPixelArray; 
+unsigned char *myPixelArray; 
 
-AUX_RGBImageRec *LoadBMP(char *Filename){
-	FILE *File=NULL;
-	if (!Filename) {
-		return NULL;         
+void LoadBMP(char *Filename){
+	// Data read from the header of the BMP file
+	unsigned char header[54]; // Each BMP file begins by a 54-bytes header
+	unsigned int dataPos;     // Position in the file where the actual data begins
+	unsigned int imageSize;   // = width*height*3
+	// Actual RGB data
+	unsigned char * data;
+	
+	FILE * file = fopen(Filename,"rb");
+	if (!file){printf("Image could not be opened\n"); return;}
+	if ( fread(header, 1, 54, file)!=54 ){ // If not 54 bytes read : problem
+	    printf("Not a correct BMP file\n");
+	    return;
 	}
-	File=fopen(Filename,"r");	
-	if (File)	// Se o arquivo existe
-	{
-		fclose(File);			        
-		return auxDIBImageLoad(Filename);//Retorna a imagem
+	
+	if ( header[0]!='B' || header[1]!='M' ){
+    printf("Not a correct BMP file\n");
+    return;
 	}
-	return NULL;			
+	// Read ints from the byte array
+	dataPos    = *(int*)&(header[0x0A]);
+	imageSize  = *(int*)&(header[0x22]);
+	imageWidth      = *(int*)&(header[0x12]);
+	imageHeight     = *(int*)&(header[0x16]);
+	
+	// Some BMP files are misformatted, guess missing information
+	if (imageSize==0)    imageSize=imageWidth*imageHeight*4; // 3 : one byte for each Red, Green and Blue component
+	if (dataPos==0)      dataPos=54; // The BMP header is done that way
+	// Create a buffer
+	myPixelArray = new unsigned char [imageSize];
+	
+	// Read the actual data from the file into the buffer
+	fread(myPixelArray,1,imageSize,file);
+	
+	//Everything is in memory now, the file can be closed
+	fclose(file);
+	for (int i=0; i<imageSize/4; i++) {
+		unsigned char b = myPixelArray[i*4];
+		unsigned char g = myPixelArray[1+i*4];
+		unsigned char r = myPixelArray[2+i*4];
+		myPixelArray[i*4] = r;
+		myPixelArray[1+i*4] = g;
+		myPixelArray[2+i*4] = b;
+	}
+			
 }
 
 vector<vector<GLfloat> > getModelview() {
@@ -305,7 +339,6 @@ void display(){
 		if (width>=2*height) {
 			dx = floor((width-2*height)/2.0);
 			dy = 0;
-		//	w=2*height;
 			h=height;
 		} else {
 			dx = 0;
@@ -333,7 +366,6 @@ void myTimer(int id) {
 void myReshape(int w, int h) {
 	height=h;
 	width=w;
-//	glViewport(210, 0, h, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(-3.0, 3.0, -3.0, 3.0);
@@ -357,29 +389,18 @@ void specialKeys( int key, int x, int y ) {
 }
 
 void initializeTexture() {
-	myPixelArray = LoadBMP(imageFile);
-	GLuint textureID; // the ID of this texture
-	glGenTextures(1, &textureID); // assign texture ID
-	glBindTexture(GL_TEXTURE_2D, textureID); // make this the active texture
-	//
-	// ... input image nRows x nCols into RGB array myPixelArray
-	//
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, myPixelArray->sizeX, myPixelArray->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, myPixelArray->data);
-	// generate mipmaps (see below)
-//	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, nCols, nRows, GL_RGB,	GL_UNSIGNED_BYTE, myPixelArray);
-	
-	glEnable(GL_TEXTURE_2D); // enable texturing
-	glBindTexture(GL_TEXTURE_2D, textureID); // select the active texture
-	// (use GL_REPLACE below for skyboxes)
+	LoadBMP(imageFile);
+	GLuint textureID; 
+	glGenTextures(1, &textureID); 
+	glBindTexture(GL_TEXTURE_2D, textureID); 
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, myPixelArray);
+	glEnable(GL_TEXTURE_2D); 
+	glBindTexture(GL_TEXTURE_2D, textureID); 
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	// repeat texture
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// reasonable filter choices
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	
-	
 	
 	GLfloat tcArray[][4] = { {1.0f, 0.0f, 0.0f, 0.5f},
 							 {0.0f, 1.0f, 0.0f, 0.5f},
@@ -464,10 +485,6 @@ void createMenu() {
 	glutAddMenuEntry("Dodecaedro",3);
 	glutAddMenuEntry("Icosaedro",4);
 	
-//	submenu2 = glutCreateMenu(searchMenu);
-//	glutAddMenuEntry("BFS", 0);
-//	glutAddMenuEntry("DFS", 1);
-	
 	submenu2 = glutCreateMenu(textureMenu);
 	glutAddMenuEntry("Bananas", 0);
 	glutAddMenuEntry("Árvore de Natal", 1);
@@ -475,7 +492,6 @@ void createMenu() {
 	
 	menu = glutCreateMenu(mainMenu);
 	glutAddSubMenu("Poliedro",submenu1);
-//	glutAddSubMenu("Tipo de busca",submenu2);
 	glutAddSubMenu("Textura", submenu2);
 	glutAddMenuEntry("Mostrar/Esconder editor", 0);
 	
@@ -488,9 +504,7 @@ vector<pair<int, int> > getVertex(int x, int y) {
 		for (int j=0; j<texCoord[i].size(); j++) {
 			int vx=(texCoord[i][j].first*(3.0/max_x)+3)*height/6.0+dx;
 			int vy=(-texCoord[i][j].second*(3.0/max_y)+3)*height/6.0+dy;
-		//	cout << vx << " " << vy << endl;
 			if (vx<=x+5 && vx>=x-5 && vy<=y+5 && vy>=y-5) {
-		//		cout << "OK" << endl;
 				ret.push_back(make_pair(i, j));
 			}
 		}
@@ -505,15 +519,12 @@ pair<GLfloat, GLfloat> windowCoordinates(myCoordinates c, int face) {
 	vector<vector<GLfloat> > vertex=coToVe(c, 1);
 	vertex=multMatrix(modelview, vertex);
 	vertex=multMatrix(projection, vertex);
-//	printm(modelview);
-//	printm(projection);
 	for (int i=0; i<4; i++) {
 		vertex[i][0]/=vertex[3][0];
 	}
 	pair<GLfloat, GLfloat> ret=make_pair(vertex[0][0], vertex[1][0]);
 	ret.first=(showEditor ? dx+h+(ret.first+1)*height/2.0 : max((width-height)/2,0)+(ret.first+1)*min(width,height)/2.0);
 	ret.second=(showEditor ? height-(dy+(ret.second+1)*height/2.0) : height-(max(0, (height-width)/2)+(ret.second+1)*min(width, height)/2.0));
-//	glViewport(max((width-height)/2,0), max(0, (height-width)/2), min(width,height), min(width, height));
 	return ret;
 	
 	
@@ -524,7 +535,6 @@ int index(int x, int y) {
 	vector<myCoordinates> vertices=p.vertices;
 	vector<vector<int> > faces=p.faces;
 	pair<GLfloat, GLfloat> wc;
-//	vector<int> vfaces;
 	for (int i=0; i<NumFaces; i++) {
 		int sum=0;
 		for (int j=0; j<p.faces[i].size(); j++) {
@@ -534,7 +544,6 @@ int index(int x, int y) {
 			wc=windowCoordinates (vertices[faces[i][next]], i);
 			vector<vector<GLfloat> > q = coToVe(myCoordinates(wc.first, wc.second, 0),1);
 			vector<vector<GLfloat> > r = coToVe(myCoordinates(x,y,0),1);
-		//	cout << "OK" << endl;
 			sum+=Orientation3p(p,q,r);
 		}
 		if (sum==-faces[i].size()) {
@@ -548,9 +557,6 @@ void myMouse(int b, int s, int x, int y) {
 	if (b==GLUT_LEFT_BUTTON) {
 		if (!showEditor || (x>height)) {
 			if (s==GLUT_UP) {
-			//	cout << windowCoordinates(myCoordinates(0.5, 0.5, 0.5),0).first << " " << windowCoordinates(myCoordinates(0.5, 0.5, 0.5),0).second << endl;
-			//	cout << "Real: " << x << " " << y << endl;
-			//    cout << index(x,y) << endl;
 				if (open) {
 					open=false;
 					glutPostRedisplay();
@@ -571,7 +577,6 @@ void myMouse(int b, int s, int x, int y) {
 			} else {
 				movingVertices.clear();
 				moving = false;
-			//	cout << x << " " << y << endl;
 			}
 		}
 	}
@@ -581,7 +586,6 @@ void myMotion(int x, int y) {
 	
 	for (int i=0; i<movingVertices.size(); i++) {
 		cout << "OK" << endl;
-	//	cout << x << " " << y << endl;
 		GLfloat new_x=(max_x/3.0)*(((x-dx)*6)/(float)height-3);
 		GLfloat new_y=-(max_y/3.0)*(((y-dy)*6)/(float)height-3);
 		cout << "Vertice " << new_x << " " << new_y << endl;
@@ -638,20 +642,17 @@ void myKeyboard(unsigned char key, int x, int y ) {
 }
 
 void initializations() {
-	glClearColor(0.0, 0.0, 0.0, 1.0); // intentionally background
-	glEnable(GL_NORMALIZE); // normalize normal vectors
-	glShadeModel(GL_SMOOTH); // do smooth shading
-	glEnable(GL_LIGHTING); // enable lighting
-	// ambient light (red)
+	glClearColor(0.0, 0.0, 0.0, 1.0); 
+	glEnable(GL_NORMALIZE); 
+	glShadeModel(GL_SMOOTH); 
+	glEnable(GL_LIGHTING); 
 	GLfloat ambientIntensity[4] = {0.8, 0.8, 0.8, 1.0};
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientIntensity);
-	// set up light 0 properties
-	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0}; // white
+	GLfloat lt0Intensity[4] = {1.5, 1.5, 1.5, 1.0};
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lt0Intensity);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, lt0Intensity);
-	GLfloat lt0Position[4] = {2.0, 4.0, 5.0, 1.0}; // location
+	GLfloat lt0Position[4] = {2.0, 4.0, 5.0, 1.0};
 	glLightfv(GL_LIGHT0, GL_POSITION, lt0Position);
-	// attenuation params (a,b,c)
 	glLightf (GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.0);
 	glLightf (GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
 	glLightf (GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1);
