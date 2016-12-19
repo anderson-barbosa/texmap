@@ -4,82 +4,79 @@
 #include <stdarg.h>
 #include <math.h>
 #define GL_GLEXT_PROTOTYPES
-#define FORMAT 0x80E0
-#include <GL/GLAux.h>
- 
+
+// Variaveis para guardar os angulos de rotacao
 double rotate_y=0; 
 double rotate_x=0;
-int sourceFace=0;
-int height;
-int width;
-bool open=false;
-GLfloat angle=0;
-GLfloat pAngle; 
-int type=TETRAHEDRON;
-char * imageFile = (char *)"bananas.bmp";
-int NumFaces=4;
-vector<vector<GLfloat> > texCoordMatrix;
-vector<vector<pair<GLfloat, GLfloat> > > texCoord;
-bool updateTexture = true;
-bool showEditor=false;
-vector<pair<int, int> > movingVertices;
-int max_x, max_y = -3;
-int min_x, min_y = 3;
-int dx, dy = 0;
-vector<vector<vector<GLfloat> > > facesModelview(NumFaces);
-vector<vector<vector<GLfloat> > > facesProjection(NumFaces);
-bool moving = false;
-unsigned int imageWidth, imageHeight;
-GLuint textureID;
-unsigned char *myPixelArray; 
 
+int sourceFace=0; // Numero da face que ficara fixa na abertura do poliedro
+int height, width; // Dimensoes da janela
+bool open=false; // Indica se o poliedro esta aberto ou fechado
+GLfloat angle=0; // Angulo de abertura do poliedro
+GLfloat pAngle; // Angulo de planificacao do polidro atual
+int type=TETRAHEDRON; // Poliedro atual
+char * imageFile = (char *)"bananas.bmp"; // Nome do arquivo da imagem de textura
+int NumFaces=4; // Numero de faces do poliedro atual
+vector<vector<GLfloat> > texCoordMatrix; // Matriz de transformacao de coordenadas de camera para coordenadas de textura
+vector<vector<pair<GLfloat, GLfloat> > > texCoord; // Coordenadas de textura dos vertices do poliedro atual
+bool updateTexture = true; // Indica se as coordenadas de textura devem se recalculadas
+bool showEditor=false; // Determina se o editor de textura será exibido
+vector<pair<int, int> > movingVertices; // Guarda os vertices que estao sendo movidos no editor de textura
+
+// Limites do editor de textura
+int max_x, max_y = -3; 
+int min_x, min_y = 3;
+
+int dx, dy = 0; // Diferenças de x ou y para uma janela com dimensoes 2:1
+vector<vector<vector<GLfloat> > > facesModelview(NumFaces); // Matrizes modelview a que cada face foi submetida
+vector<vector<vector<GLfloat> > > facesProjection(NumFaces); // 
+bool moving = false; // Indica se algum vertice esta sendo movido no editor de textura
+unsigned int imageWidth, imageHeight; // Dimensões da imagem da textura
+GLuint textureID; // ID da textura
+unsigned char *myPixelArray; // Array para guardar a imagem da textura
+
+
+// Carrega uma imagem BMP em myPixelArray
 void LoadBMP(char *Filename){
-	// Data read from the header of the BMP file
-	unsigned char header[54]; // Each BMP file begins by a 54-bytes header
-	unsigned int dataPos;     // Position in the file where the actual data begins
-	unsigned int imageSize;   // = width*height*3
-	// Actual RGB data
+	unsigned char header[54]; 
+	unsigned int dataPos;     
+	unsigned int imageSize;   
 	unsigned char * data;
-	
 	FILE * file = fopen(Filename,"rb");
-	if (!file){printf("Image could not be opened\n"); return;}
-	if ( fread(header, 1, 54, file)!=54 ){ // If not 54 bytes read : problem
+	if (!file){
+		printf("Image could not be opened\n"); 
+		return;
+	}
+	if ( fread(header, 1, 54, file)!=54 ){ 
 	    printf("Not a correct BMP file\n");
 	    return;
 	}
-	
 	if ( header[0]!='B' || header[1]!='M' ){
-    printf("Not a correct BMP file\n");
-    return;
+	    printf("Not a correct BMP file\n");
+	    return;
 	}
-	// Read ints from the byte array
 	dataPos    = *(int*)&(header[0x0A]);
 	imageSize  = *(int*)&(header[0x22]);
 	imageWidth      = *(int*)&(header[0x12]);
 	imageHeight     = *(int*)&(header[0x16]);
-	
-	// Some BMP files are misformatted, guess missing information
-	if (imageSize==0)    imageSize=imageWidth*imageHeight*4; // 3 : one byte for each Red, Green and Blue component
-	if (dataPos==0)      dataPos=54; // The BMP header is done that way
-	// Create a buffer
+	if (imageSize==0) {
+		imageSize=imageWidth*imageHeight*4; 
+	}   
+	if (dataPos==0)  {
+		dataPos=54;
+	}     
 	myPixelArray = new unsigned char [imageSize];
-	
-	// Read the actual data from the file into the buffer
 	fread(myPixelArray,1,imageSize,file);
-	
-	//Everything is in memory now, the file can be closed
 	fclose(file);
 	for (int i=0; i<imageSize/4; i++) {
 		unsigned char b = myPixelArray[i*4];
-		unsigned char g = myPixelArray[1+i*4];
 		unsigned char r = myPixelArray[2+i*4];
 		myPixelArray[i*4] = r;
-		myPixelArray[1+i*4] = g;
 		myPixelArray[2+i*4] = b;
-	}
-			
+	}		
 }
 
+// Obtem a matriz modelview atual
 vector<vector<GLfloat> > getModelview() {
 	vector<vector<GLfloat> > modelview(4);
 	GLfloat mv[16];
@@ -95,6 +92,7 @@ vector<vector<GLfloat> > getModelview() {
 	return modelview;
 }
 
+// Obtem a matriz projection atual
 vector<vector<GLfloat> > getProjection() {
 	vector<vector<GLfloat> > projection(4);
 	GLfloat pj[16];
@@ -110,6 +108,7 @@ vector<vector<GLfloat> > getProjection() {
 	return projection;
 }
 
+// Atualiza a matriz texCoordMatrix
 vector<vector<GLfloat> > updateTexCoord(int i, Polyhedron ph) {
 	vector<myCoordinates> vertices=ph.vertices;
 	vector<vector<int> > faces=ph.faces;
@@ -143,6 +142,7 @@ vector<vector<GLfloat> > updateTexCoord(int i, Polyhedron ph) {
 	return m;
 }
 
+// Atualiza as coordenadas de textura dos vertices do poliedro atual
 void updateFaceTexCoord(int i, Polyhedron p) {
 	vector<myCoordinates> vertices=p.vertices;
 	vector<int> face=p.faces[i];
@@ -168,6 +168,7 @@ void updateFaceTexCoord(int i, Polyhedron p) {
 	}
 }
 
+// Inicializa a variavel texCoord
 void initializeTexCoord() {
 	texCoord.resize(NumFaces);
 	switch (NumFaces) {
@@ -199,6 +200,7 @@ void initializeTexCoord() {
 	}
 }
 
+// Desenha um quadrado cinza de lado 0.2
 void drawSquare(GLfloat centerX, GLfloat centerY) {
 	glColor3f(0.3f, 0.3f, 0.3f);
 	glBegin(GL_LINE_LOOP);
@@ -209,6 +211,7 @@ void drawSquare(GLfloat centerX, GLfloat centerY) {
 	glEnd();
 }
 
+// Desenha o poliedro
 void drawPolyhedron() {
 	Polyhedron polyhedron(type);
 	pAngle=polyhedron.getAngle();
@@ -290,6 +293,7 @@ void drawPolyhedron() {
 	glPopMatrix();
 }
 
+// Desenha o editor de textura
 void drawEditor() {
 	glClearColor(0,0,0,1);	
 	glDisable(GL_LIGHTING);
@@ -297,7 +301,6 @@ void drawEditor() {
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(3/(float)max_x, 3/(float)max_y, 1.0f);
-//	glMultMatrix()
 	for (int i=0; i<2*max_x; i++) {
 		for (int j=0; j<2*max_y; j++) {
 			glBegin(GL_POLYGON);
@@ -330,9 +333,7 @@ void drawEditor() {
 	glEnable(GL_TEXTURE_2D);
 }
 
-
-
-
+// Funcao callback display
 void display(){
 	int x, y, w, h;
 	if (showEditor) {
@@ -358,11 +359,13 @@ void display(){
     glutSwapBuffers();
 }
 
+// Funcao callback timer
 void myTimer(int id) {
 	glutPostRedisplay();
 	glutTimerFunc(25, myTimer, 0);
 }
- 
+
+// Funcao callback reshape
 void myReshape(int w, int h) {
 	height=h;
 	width=w;
@@ -373,6 +376,7 @@ void myReshape(int w, int h) {
 	glutPostRedisplay();
 }
 
+// Funcao callback das teclas especiais
 void specialKeys( int key, int x, int y ) {
  
 	if (key == GLUT_KEY_RIGHT) {
@@ -388,6 +392,7 @@ void specialKeys( int key, int x, int y ) {
  
 }
 
+// Inicializa a textura
 void initializeTexture() {
 	LoadBMP(imageFile);
 	GLuint textureID; 
@@ -417,6 +422,7 @@ void initializeTexture() {
 	}
 }
 
+// Cria um menu para troca do poliedro
 void polyhedronMenu(int option) {
 	switch (option) {
 		case 0:
@@ -450,6 +456,7 @@ void polyhedronMenu(int option) {
 	glutPostRedisplay();
 }
 
+// Cria um menu para troca da imagem da textura 
 void textureMenu(int option) {
 	switch(option) {
 		case 0:
@@ -466,6 +473,7 @@ void textureMenu(int option) {
 	glutPostRedisplay();
 }
 
+// Cria o menu principal
 void mainMenu(int option){
 	if (!option && !showEditor) {
 		showEditor=true;
@@ -475,6 +483,7 @@ void mainMenu(int option){
 	glutPostRedisplay();
 }
 
+// Cria todos os menus
 void createMenu() {
 	int menu, submenu1, submenu2, submenu3;
 	
@@ -498,6 +507,7 @@ void createMenu() {
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
+// Obtem os vertices de textura para uma dada posicao na janela
 vector<pair<int, int> > getVertex(int x, int y) {
 	vector<pair<int, int> > ret;
 	for (int i=0; i<texCoord.size(); i++) {
@@ -512,6 +522,7 @@ vector<pair<int, int> > getVertex(int x, int y) {
 	return ret;
 }
 
+// Obtem as coordenadas de janela de um vertice
 pair<GLfloat, GLfloat> windowCoordinates(myCoordinates c, int face) {
 	int h=min(height, width/2);
 	vector<vector<GLfloat> > modelview=facesModelview[face];
@@ -525,11 +536,10 @@ pair<GLfloat, GLfloat> windowCoordinates(myCoordinates c, int face) {
 	pair<GLfloat, GLfloat> ret=make_pair(vertex[0][0], vertex[1][0]);
 	ret.first=(showEditor ? dx+h+(ret.first+1)*height/2.0 : max((width-height)/2,0)+(ret.first+1)*min(width,height)/2.0);
 	ret.second=(showEditor ? height-(dy+(ret.second+1)*height/2.0) : height-(max(0, (height-width)/2)+(ret.second+1)*min(width, height)/2.0));
-	return ret;
-	
-	
+	return ret;	
 }
 
+// Obtem a face que aparece em uma dada posicao na janela
 int index(int x, int y) {
 	Polyhedron p(type);
 	vector<myCoordinates> vertices=p.vertices;
@@ -553,6 +563,7 @@ int index(int x, int y) {
 	return -1;
 }
 
+// Funcao callback do mouse
 void myMouse(int b, int s, int x, int y) {
 	if (b==GLUT_LEFT_BUTTON) {
 		if (!showEditor || (x>height)) {
@@ -582,22 +593,19 @@ void myMouse(int b, int s, int x, int y) {
 	}
 }
 
+// Funcao callback do movimento ativo do mouse
 void myMotion(int x, int y) {
 	
 	for (int i=0; i<movingVertices.size(); i++) {
-		cout << "OK" << endl;
 		GLfloat new_x=(max_x/3.0)*(((x-dx)*6)/(float)height-3);
 		GLfloat new_y=-(max_y/3.0)*(((y-dy)*6)/(float)height-3);
-		cout << "Vertice " << new_x << " " << new_y << endl;
-	    cout << max_x << " " << min_x << " " << max_y << " " << min_y << endl;
 		texCoord[movingVertices[i].first][movingVertices[i].second].first=(max(min(new_x, (float)max_x), (float)min_x));
 		texCoord[movingVertices[i].first][movingVertices[i].second].second=(max(min(new_y, (float)max_y), (float)min_y));
 		glutPostRedisplay();
 	}
 }
 
-
-
+//Funcao callback do teclado
 void myKeyboard(unsigned char key, int x, int y ) {
 	if (key=='1'){
 		type=TETRAHEDRON;
@@ -641,6 +649,7 @@ void myKeyboard(unsigned char key, int x, int y ) {
 	glutPostRedisplay();
 }
 
+// Inicializacoes da iluminacao, da textura e do menu
 void initializations() {
 	glClearColor(0.0, 0.0, 0.0, 1.0); 
 	glEnable(GL_NORMALIZE); 
@@ -661,23 +670,22 @@ void initializations() {
 	initializeTexCoord();
 	createMenu();
 }
- 
+
+// Funcao main
 int main(int argc, char* argv[]){
- 
-  glutInit(&argc,argv);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-  glutInitWindowSize(1080,540);
-  glutCreateWindow("Poliedros regulares");
-  glEnable(GL_DEPTH_TEST);
-  glutDisplayFunc(display);
-  glutSpecialFunc(specialKeys);
-  glutMouseFunc(myMouse);
-  glutMotionFunc(myMotion);
-  glutReshapeFunc(myReshape);
-  glutTimerFunc(50, myTimer, 0);
-  glutKeyboardFunc(myKeyboard);
-  initializations();
-  glutMainLoop();
-  return 0;
- 
+	glutInit(&argc,argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitWindowSize(1080,540);
+	glutCreateWindow("Poliedros regulares");
+	glEnable(GL_DEPTH_TEST);
+	glutDisplayFunc(display);
+	glutSpecialFunc(specialKeys);
+	glutMouseFunc(myMouse);
+	glutMotionFunc(myMotion);
+	glutReshapeFunc(myReshape);
+	glutTimerFunc(50, myTimer, 0);
+	glutKeyboardFunc(myKeyboard);
+	initializations();
+	glutMainLoop();
+	return 0;
 }
