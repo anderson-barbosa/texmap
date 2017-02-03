@@ -1,1 +1,1 @@
-# texmap
+##Projeto desenvolvido como parte da avaliação da disciplina de Computação Gráfica (EEL882) da UFRJ.
